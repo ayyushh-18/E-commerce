@@ -1,8 +1,7 @@
-console.log("Admin panel loaded successfully!");
-const API_BASE = "http://localhost:5000/api";
-const user = JSON.parse(
-    localStorage.getItem("user") || "null"
-);
+// ADMIN PANEL INITIALIZED
+// Shared helpers are provided globally from utils.js
+
+const user = getJSON("user");
 const token = localStorage.getItem("token");
 
 if (
@@ -10,45 +9,90 @@ if (
     !user ||
     user.role !== "admin"
 ) {
-    window.location.href = "signin.html";
+
+    notify(
+        "Admin access required",
+        "error"
+    );
+
+    setTimeout(() => {
+        window.location.href =
+            "signin.html";
+    }, 800);
 }
 
-const notify = (
-    message,
-    type = "info"
-) => {
-    if (
-        typeof showToast === "function"
-    ) {
-        showToast(message, type);
-    } else {
-        alert(message);
-    }
-};
-
-// BACKEND API CONFIG
-// Helper function for backend requests with JWT
-const apiRequest = async (url, method = "GET", body = null) => {
-    const token = localStorage.getItem("token");
-    const options = {
-        method,
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-    };
-    if (body) options.body = JSON.stringify(body);
-    const res = await fetch(
-        `${API_BASE}${url}`,
-        options
-    );
-    return await res.json();
-};
-
 // ELEMENTS
-const productForm = document.getElementById("product-form");
-const productTableBody = document.getElementById("product-table-body");
-const ordersTableBody = document.getElementById("orders-table-body");
+const elements = {
+    productForm:
+        document.getElementById(
+            "product-form"
+        ),
+
+    productTableBody:
+        document.getElementById(
+            "product-table-body"
+        ),
+
+    ordersTableBody:
+        document.getElementById(
+            "orders-table-body"
+        ),
+
+    totalOrders:
+        document.getElementById(
+            "total-orders"
+        ),
+
+    totalProducts:
+        document.getElementById(
+            "total-products"
+        ),
+
+    totalUsers:
+        document.getElementById(
+            "total-users"
+        ),
+
+    totalRevenue:
+        document.getElementById(
+            "total-revenue"
+        ),
+
+    productName:
+        document.getElementById(
+            "product-name"
+        ),
+
+    productCategory:
+        document.getElementById(
+            "product-category"
+        ),
+
+    productPrice:
+        document.getElementById(
+            "product-price"
+        ),
+
+    productDescription:
+        document.getElementById(
+            "product-description"
+        ),
+
+    productImage:
+        document.getElementById(
+            "product-image"
+        ),
+
+    productStock:
+        document.getElementById(
+            "product-stock"
+        ),
+
+    featuredProduct:
+        document.getElementById(
+            "featured-product"
+        )
+};
 
 // FETCH INITIAL DATA
 let products = [];
@@ -56,10 +100,18 @@ let orders = [];
 
 const loadInitialData = async () => {
     try {
-        const productsRes = await apiRequest("/api/products");
+        if(elements.productTableBody){
+            elements.productTableBody.innerHTML =
+                `<tr>
+                    <td colspan="6">
+                        Loading products...
+                    </td>
+                </tr>`;
+        }
+        const productsRes = await apiRequest("/products");
         if (productsRes.success) products = productsRes.products;
 
-        const ordersRes = await apiRequest("/api/orders");
+        const ordersRes = await apiRequest("/orders");
         if (ordersRes.success) orders = ordersRes.orders;
 
         renderProducts();
@@ -72,92 +124,93 @@ const loadInitialData = async () => {
 
 // RENDER STATS
 function renderStats() {
-    const totalOrders =
-        document.getElementById(
-            "total-orders"
-        );
 
-    const totalProducts =
-        document.getElementById(
-            "total-products"
-        );
-
-    const totalUsers =
-        document.getElementById(
-            "total-users"
-        );
-
-    const totalRevenue =
-        document.getElementById(
-            "total-revenue"
-        );
-
-    if (totalOrders) {
-        totalOrders.innerText =
-            orders.length;
+    if (elements.totalOrders) {
+        elements.totalOrders.innerText =
+            (orders || []).length;
     }
 
-    if (totalProducts) {
-        totalProducts.innerText =
-            products.length;
+    if (elements.totalProducts) {
+        elements.totalProducts.innerText =
+            (products || []).length;
     }
 
-    if (totalUsers) {
-        totalUsers.innerText =
+    if (elements.totalUsers) {
+        elements.totalUsers.innerText =
             localStorage.getItem(
                 "visits"
             ) || 0;
     }
 
-    const revenue = orders.reduce(
+    const revenue = (orders || []).reduce(
         (sum, order) => {
+
             return (
                 sum +
                 parseFloat(
                     order.total || 0
                 )
             );
+
         },
         0
     );
 
-    if (totalRevenue) {
-        totalRevenue.innerText =
+    if (elements.totalRevenue) {
+        elements.totalRevenue.innerText =
             `₹${revenue.toFixed(2)}`;
     }
 }
 
 // ADD PRODUCT
-if (productForm) {
-    productForm.addEventListener("submit", async (e) => {
+if (elements.productForm) {
+    elements.productForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const productData = {
-            name: document.getElementById("product-name").value,
-            category: document.getElementById("product-category").value,
-            price: parseFloat(
-                document.getElementById(
-                    "product-price"
-                ).value
-            ) || 0,
-            description: document.getElementById("product-description").value,
-            image: document.getElementById("product-image").value,
-            stock: parseInt(
-                document.getElementById(
-                    "product-stock"
-                ).value
-            ) || 0,
-            featured: document.getElementById("featured-product").checked,
-        };
+            name:
+                elements.productName.value,
 
+            category:
+                elements.productCategory.value,
+
+            price:
+                parseFloat(
+                    elements.productPrice.value
+                ) || 0,
+            
+            description:
+                elements.productDescription.value,
+            
+            image:
+                elements.productImage.value,
+            
+            stock:
+                parseInt(
+                    elements.productStock.value
+                ) || 0,
+            
+            featured:
+                elements.featuredProduct.checked
+        };
+        if(
+            !productData.name.trim() ||
+            !productData.category.trim()
+        ){
+            notify(
+                "Product name and category are required",
+                "error"
+            );
+            return;
+        }
         try {
-            const res = await apiRequest("/api/products", "POST", productData);
+            const res = await apiRequest("/products", "POST", productData);
             if (res.success) {
                 notify(
                     "Product added successfully!",
                     "success"
                 );
                 await loadInitialData();
-                productForm.reset();
+                elements.productForm.reset();
             } else {
                 notify(
                     res.message ||
@@ -177,10 +230,10 @@ if (productForm) {
 
 // RENDER PRODUCTS
 function renderProducts() {
-    if (!productTableBody) return;
-    productTableBody.innerHTML = "";
+    if (!elements.productTableBody) return;
+    elements.productTableBody.innerHTML = "";
 
-    products.forEach((product) => {
+    (products || []).forEach((product) => {
         const row = document.createElement("tr");
         row.innerHTML = `
             <td>${product.name}</td>
@@ -193,14 +246,14 @@ function renderProducts() {
                 <button class="action-btn delete-btn" onclick="deleteProduct(${product.id})">Delete</button>
             </td>
         `;
-        productTableBody.appendChild(row);
+        elements.productTableBody.appendChild(row);
     });
 }
 
 // DELETE PRODUCT
 async function deleteProduct(id) {
     try {
-        const res = await apiRequest(`/api/products/${id}`, "DELETE");
+        const res = await apiRequest(`/products/${id}`, "DELETE");
         if (res.success) {
             products = products.filter(
                 (p) => p.id !== id
@@ -237,12 +290,12 @@ async function editProduct(id) {
     const newStock = prompt("Edit Product Stock", product.stock);
 
     if (
-        newName &&
+        newName?.trim() &&
         !isNaN(newPrice) &&
         !isNaN(newStock)
     ) {
         const updatedData = {
-            name: newName,
+            name: newName.trim(),
             description:
                 product.description || "",
             price: parseFloat(newPrice),
@@ -250,13 +303,13 @@ async function editProduct(id) {
                 product.image || "",
             category:
                 product.category || "",
-            stock: parseInt(newStock),
+            stock: parseInt(newStock) || 0,
             featured:
                 product.featured || false
         };
 
         try {
-            const res = await apiRequest(`/api/products/${id}`, "PUT", updatedData);
+            const res = await apiRequest(`/products/${id}`, "PUT", updatedData);
             if (res.success) {
                 Object.assign(product, updatedData);
                 renderProducts();
@@ -284,9 +337,9 @@ async function editProduct(id) {
 
 // RENDER ORDERS
 function renderOrders() {
-    if (!ordersTableBody) return;
-    ordersTableBody.innerHTML = "";
-    orders.forEach((order) => {
+    if (!elements.ordersTableBody) return;
+    elements.ordersTableBody.innerHTML = "";
+    (orders || []).forEach((order) => {
         const row = document.createElement("tr");
         row.innerHTML = `
             <td>${order.id}</td>
@@ -295,7 +348,7 @@ function renderOrders() {
                 order.total || 0
             ).toFixed(2)}</td>
         `;
-        ordersTableBody.appendChild(row);
+        elements.ordersTableBody.appendChild(row);
     });
 }
 

@@ -1,222 +1,234 @@
-console.log("Profile page loaded successfully!");
-
 // AUTH PROTECTION
-const token = localStorage.getItem("token");
-const user = JSON.parse(
-    localStorage.getItem("user")
-);
+const user = requireAuth();
 
-if (!token || !user) {
-    window.location.href = "signin.html";
-} else {
+if(user){
     loadUserProfile(user);
 }
 
-// LOAD PROFILE
-function loadUserProfile(user){
-
-    // Sidebar
-    const sidebarName =
+const elements = {
+    sidebarName:
         document.getElementById(
             "sidebar-name"
-        );
+        ),
 
-    const sidebarEmail =
+    sidebarEmail:
         document.getElementById(
             "sidebar-email"
-        );
+        ),
 
-    if (sidebarName) {
-        sidebarName.innerText =
+    profileName:
+        document.getElementById(
+            "profile-name"
+        ),
+
+    profileEmail:
+        document.getElementById(
+            "profile-email"
+        ),
+
+    profilePhone:
+        document.getElementById(
+            "profile-phone"
+        ),
+
+    profileAddress:
+        document.getElementById(
+            "profile-address"
+        ),
+
+    profileBio:
+        document.getElementById(
+            "profile-bio"
+        ),
+
+    profilePreview:
+        document.getElementById(
+            "profile-preview"
+        ),
+
+    profileForm:
+        document.getElementById(
+            "profile-form"
+        ),
+
+    avatarInput:
+        document.getElementById(
+            "avatar-input"
+        )
+};
+
+const getStorageValue = (key) =>
+    localStorage.getItem(key) || "";
+
+// LOAD PROFILE
+function loadUserProfile(user){
+    if (elements.sidebarName) {
+        elements.sidebarName.innerText =
             user.name || "User";
     }
 
-    if (sidebarEmail) {
-        sidebarEmail.innerText =
-            user.email || "";
+    if (elements.sidebarEmail) {
+        elements.sidebarEmail.innerText =
+            (user.email || "").trim();
     }
 
-    // Form
-    const profileName =
-        document.getElementById(
-            "profile-name"
-        );
-
-    const profileEmail =
-        document.getElementById(
-            "profile-email"
-        );
-
-    const profilePhone =
-        document.getElementById(
-            "profile-phone"
-        );
-
-    const profileAddress =
-        document.getElementById(
-            "profile-address"
-        );
-
-    const profileBio =
-        document.getElementById(
-            "profile-bio"
-        );
-
-    if (profileName) {
-        profileName.value =
-            localStorage.getItem(
+    if (elements.profileName) {
+        elements.profileName.value =
+            getStorageValue(
                 "profileName"
             ) ||
             user.name ||
             "";
     }
 
-    if (profileEmail) {
-        profileEmail.value =
+    if (elements.profileEmail) {
+        elements.profileEmail.value =
             user.email || "";
     }
 
-    if (profilePhone) {
-        profilePhone.value =
-            localStorage.getItem(
+    if (elements.profilePhone) {
+        elements.profilePhone.value =
+            getStorageValue(
                 "profilePhone"
             ) || "";
     }
 
-    if (profileAddress) {
-        profileAddress.value =
-            localStorage.getItem(
+    if (elements.profileAddress) {
+        elements.profileAddress.value =
+            getStorageValue(
                 "profileAddress"
             ) || "";
     }
 
-    if (profileBio) {
-        profileBio.value =
-            localStorage.getItem(
+    if (elements.profileBio) {
+        elements.profileBio.value =
+            getStorageValue(
                 "profileBio"
             ) || "";
     }
 
-    // Avatar
     const savedAvatar =
-        localStorage.getItem(
+        getStorageValue(
             "profileAvatar"
-        );
-
-    const profilePreview =
-        document.getElementById(
-            "profile-preview"
         );
 
     if (
         savedAvatar &&
-        profilePreview
+        elements.profilePreview
     ) {
-        profilePreview.src =
+        elements.profilePreview.src =
             savedAvatar;
     }
-
 }
 
-// SAVE PROFILE
-const profileForm =
-    document.getElementById(
-        "profile-form"
-    );
+if (elements.profileForm) {
+    elements.profileForm.addEventListener(
+        "submit",
+        (e) => {
+            e.preventDefault();
+            if(
+                !elements.profileName.value.trim()
+            ){
+                notify(
+                    "Name cannot be empty",
+                    "error"
+                );
+                return;
+            }
+            localStorage.setItem(
+                "profileName",
+                elements.profileName.value.trim()
+            );
 
-if (profileForm) {
-profileForm.addEventListener(
-    "submit",
-    (e) => {
-        e.preventDefault();
-        localStorage.setItem(
-            "profileName",
-            document.getElementById(
-                "profile-name"
-            ).value
-        );
+            localStorage.setItem(
+                "profilePhone",
+                elements.profilePhone.value.trim()
+            );
 
-        localStorage.setItem(
-            "profilePhone",
-            document.getElementById(
-                "profile-phone"
-            ).value
-        );
+            localStorage.setItem(
+                "profileAddress",
+                elements.profileAddress.value.trim()
+            );
 
-        localStorage.setItem(
-            "profileAddress",
-            document.getElementById(
-                "profile-address"
-            ).value
-        );
+            localStorage.setItem(
+                "profileBio",
+                elements.profileBio.value.trim()
+            );
 
-        localStorage.setItem(
-            "profileBio",
-            document.getElementById(
-                "profile-bio"
-            ).value
-        );
+            if(elements.sidebarName){
+                elements.sidebarName.innerText =
+                    elements.profileName.value.trim();
+            }
+            const updatedUser = {
+                ...user,
+                name:
+                    elements.profileName.value.trim()
+            };
 
-        document.getElementById(
-            "sidebar-name"
-        ).innerText =
-            document.getElementById(
-                "profile-name"
-            ).value;
+            setJSON(
+                "user",
+                updatedUser
+            );
 
-        if (typeof notify === "function") {
             notify(
                 "Profile updated successfully!",
                 "success"
             );
-        } else {
-            alert(
-                "Profile updated successfully!"
-            );
         }
-    }
-);
+    );
 }
 
-// AVATAR UPLOAD
-const avatarInput =
-    document.getElementById(
-        "avatar-input"
-    );
+if (elements.avatarInput) {
+    elements.avatarInput.addEventListener(
+        "change",
+        (e) => {
+            const file =
+                e.target.files[0];
 
-if (avatarInput) {
-avatarInput.addEventListener(
-    "change",
-    (e) => {
-        const file =
-            e.target.files[0];
-
-        if(!file) return;
-
-        const reader =
-            new FileReader();
-
-        reader.onload = function(event){
-
-            const image =
-                event.target.result;
-
-            const profilePreview =
-                document.getElementById(
-                    "profile-preview"
+            if(!file) return;
+            const allowedTypes = [
+                "image/jpeg",
+                "image/png",
+                "image/webp"
+            ];
+            if(
+                !allowedTypes.includes(file.type)
+            ){
+                notify(
+                    "Please upload a valid image",
+                    "error"
                 );
-            
-            if (profilePreview) {
-                profilePreview.src =
-                    image;
+                return;
+            }
+            const maxSize =
+                2 * 1024 * 1024;
+            if(file.size > maxSize){
+                notify(
+                    "Image must be under 2MB",
+                    "error"
+                );
+                return;
             }
 
-            localStorage.setItem(
-                "profileAvatar",
-                image
-            );
-        };
-        reader.readAsDataURL(file);
-    }
-);
+            const reader =
+                new FileReader();
+
+            reader.onload = function(event){
+
+                const image =
+                    event.target.result;
+
+                if (elements.profilePreview) {
+                    elements.profilePreview.src =
+                        image;
+                }
+
+                localStorage.setItem(
+                    "profileAvatar",
+                    image
+                );
+            };
+            reader.readAsDataURL(file);
+        }
+    );
 }

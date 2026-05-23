@@ -1,17 +1,22 @@
-async function loadComponent(id, file) {
+const loadComponent = async (
+    id,
+    file
+) => {
     const element =
         document.getElementById(id);
     if (!element) return;
     element.innerHTML =
         "<p>Loading...</p>";
     try {
-        const response = await fetch(file);
+        const response =
+            await fetch(file);
         if (!response.ok) {
             throw new Error(
                 `Failed to load ${file}`
             );
         }
-        const data = await response.text();
+        const data =
+            await response.text();
         element.innerHTML = data;
     } catch (error) {
         console.error(
@@ -21,7 +26,7 @@ async function loadComponent(id, file) {
         element.innerHTML =
             "<p>Failed to load component.</p>";
     }
-}
+};
 
 document.addEventListener(
     "DOMContentLoaded",

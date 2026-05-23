@@ -4,70 +4,113 @@ console.log("Product page loaded successfully!");
 const API_BASE = "http://localhost:5000/api";
 const notify = (message, type = "info") => {
     if (typeof showToast === "function") {
-        notify(message, type);
+        showToast(message, type); // calls showToast, not notify()
     } else {
         alert(message);
     }
 };
 
-let product = null;
-try {
-    product = JSON.parse(
-        localStorage.getItem(
-            "selectedProduct"
-        )
-    );
-} catch (error) {
-    console.error(
-        "Invalid selectedProduct:",
-        error
-    );
-}
-
-const fallbackProduct = {
-    id: 1,
-    brand: "AnthropicBots",
-    name: "Modern Fashion T-Shirt",
-    category: "T-Shirt",
-    price: 999,
-    image: "../assets/images/f1.jpg",
-    description: "Premium quality cotton t-shirt with breathable fabric and modern fashion styling.",
-    stock: 12,
-    rating: 4.5
+// REPLACE WITH
+const elements = {
+    mainImage: document.getElementById("main-product-image"),
+    smallImages: document.querySelectorAll(".small-image"),
+    qtyInput: document.getElementById("product-qty"),
+    productCategory: document.getElementById("product-category"),
+    productName: document.getElementById("product-name"),
+    productPrice: document.getElementById("product-price"),
+    productOriginalPrice: document.getElementById("product-original-price"),
+    productDiscount: document.getElementById("product-discount"),
+    productBrand: document.getElementById("product-brand"),
+    productDescription: document.getElementById("product-description"),
+    productStock: document.getElementById("product-stock"),
+    productRatingText: document.getElementById("product-rating-text"),
+    variantStock: document.getElementById("variant-stock"),
+    relatedContainer: document.getElementById("related-products-container"),
+    recommendedContainer: document.getElementById("recommended-products-container"),
+    wishlistBtn: document.getElementById("wishlist-btn"),
+    reviewForm: document.getElementById("review-form"),
+    reviewContainer: document.getElementById("review-container"),
+    plusBtn: document.getElementById("plus-btn"),
+    minusBtn: document.getElementById("minus-btn"),
+    addToCartBtn: document.getElementById("add-to-cart-btn"),
+    buyNowBtn: document.getElementById("buy-now-btn")
 };
 
-const currentProduct = product || fallbackProduct;
+function renderStars(rating) {
+    let stars = "";
+    for(let i=0; i<5; i++) {
+        stars += i < rating ? `<i class="fas fa-star"></i>` : `<i class="far fa-star"></i>`;
+    }
+    return stars;
+}
+
+function renderProductCard(product, container) {
+    const card = document.createElement("div");
+    card.classList.add("pro");
+    card.innerHTML = `
+        <img src="${product.image}" alt="${product.name}">
+        <div class="des">
+            <span>${product.brand || "Brand"}</span>
+            <h5>${product.name}</h5>
+            <div class="star">
+                ${renderStars(product.rating || 4)}
+            </div>
+            <h4>₹${product.price}</h4>
+        </div>
+    `;
+    card.addEventListener("click", () => {
+        localStorage.setItem("selectedProduct", JSON.stringify(product));
+        window.location.href = "product.html";
+    });
+    container.appendChild(card);
+}
+
+// Read product ID from URL
+const urlParams = new URLSearchParams(window.location.search);
+const productId = urlParams.get("id");
+
+// Fetch product from backend
+let currentProduct = null;
+async function fetchProduct() {
+    const res = await apiRequest(`/products/${productId}`);
+    if (res.success) {
+        currentProduct = res.product;
+        renderProduct(currentProduct);
+    } else {
+        // fallback if backend fails
+        currentProduct = {
+            id: 1,
+            brand: "AnthropicBots",
+            name: "Modern Fashion T-Shirt",
+            category: "T-Shirt",
+            price: 999,
+            image: "../assets/images/f1.jpg",
+            description: "Premium quality cotton t-shirt with breathable fabric and modern fashion styling.",
+            stock: 12,
+            rating: 4.5
+        };
+        renderProduct(currentProduct);
+        updateRecentlyViewed(currentProduct);
+    }
+}
+fetchProduct();
 
 // RECENTLY VIEWED PRODUCTS
-let viewedProducts = JSON.parse(localStorage.getItem("recentlyViewed")) || [];
-viewedProducts = viewedProducts.filter(item => item.id !== currentProduct.id);
-viewedProducts.unshift({
-    id: currentProduct.id,
-    name: currentProduct.name,
-    brand: currentProduct.brand,
-    category: currentProduct.category,
-    price: currentProduct.price,
-    image: currentProduct.image
-});
-
-viewedProducts = viewedProducts.slice(0, 8);
-localStorage.setItem("recentlyViewed", JSON.stringify(viewedProducts));
-
-// ELEMENTS
-const mainImage =
-    document.getElementById(
-        "main-product-image"
-    );
-
-const smallImages =
-    document.querySelectorAll(
-        ".small-image"
-    );
-
-const qtyInput =
-    document.getElementById(
-        "product-qty"
-    );
+// AFTER currentProduct is fetched
+function updateRecentlyViewed(product) {
+    let viewed = JSON.parse(localStorage.getItem("recentlyViewed")) || [];
+    viewed = viewed.filter(item => item.id !== product.id);
+    viewed.unshift({
+        id: product.id,
+        name: product.name,
+        brand: product.brand,
+        category: product.category,
+        price: product.price,
+        image: product.image
+    });
+    viewed = viewed.slice(0, 8);
+    localStorage.setItem("recentlyViewed", JSON.stringify(viewed));
+}
 
 if (qtyInput) {
     qtyInput.addEventListener(
@@ -84,42 +127,6 @@ if (qtyInput) {
     );
 }
 
-// RENDER PRODUCT
-const productCategory =
-    document.getElementById(
-        "product-category"
-    );
-
-const productName =
-    document.getElementById(
-        "product-name"
-    );
-
-const productPrice =
-    document.getElementById(
-        "product-price"
-    );
-
-const productBrand =
-    document.getElementById(
-        "product-brand"
-    );
-
-const productDescription =
-    document.getElementById(
-        "product-description"
-    );
-
-const productStock =
-    document.getElementById(
-        "product-stock"
-    );
-
-const productRatingText =
-    document.getElementById(
-        "product-rating-text"
-    );
-
 if (productCategory) {
     productCategory.innerText =
         `Home / ${
@@ -135,10 +142,14 @@ if (productName) {
 }
 
 if (productPrice) {
-    productPrice.innerText =
-        `₹${parseFloat(
-            currentProduct.price || 0
-        ).toFixed(2)}`;
+    const discountedPrice = currentProduct.price * (1 - (currentProduct.discount_percent || 0)/100);
+    productPrice.innerText = `₹${discountedPrice.toFixed(2)}`;
+    if (elements.productOriginalPrice) {
+        elements.productOriginalPrice.innerText = `₹${currentProduct.original_price || currentProduct.price}`;
+    }
+    if (elements.productDiscount) {
+        elements.productDiscount.innerText = `${currentProduct.discount_percent || 0}% OFF`;
+    }
 }
 
 if (productBrand) {
@@ -238,49 +249,22 @@ if (productTopMeta) {
 }
 
 // PRODUCT VARIANTS
-const productVariants = {
-    Black: {
-        M: 12,
-        L: 8,
-        XL: 5,
-        XXL: 2,
-        image:
-            currentProduct.image
-    },
+const productVariants = {};
+let selectedColor = null;
+let selectedSize = null;
 
-    Blue: {
-        M: 9,
-        L: 6,
-        XL: 4,
-        XXL: 1,
-        image:
-            "../assets/images/f2.jpg"
-    },
+if(currentProduct.variants) {
+    currentProduct.variants.forEach(variant => {
+        const { color, sizes, image } = variant;
+        productVariants[color] = { ...sizes, image };
+    });
+    // Default selection
+    selectedColor = Object.keys(productVariants)[0];
+    selectedSize = Object.keys(productVariants[selectedColor])[0];
+}
 
-    Red: {
-        M: 7,
-        L: 5,
-        XL: 3,
-        XXL: 1,
-        image:
-            "../assets/images/f3.jpg"
-    },
-
-    White: {
-        M: 10,
-        L: 7,
-        XL: 4,
-        XXL: 2,
-        image:
-            "../assets/images/f4.jpg"
-    }
-};
-
-let selectedColor =
-    "Black";
-
-let selectedSize =
-    "M";
+let selectedColor = Object.keys(productVariants)[0] || "Black";
+let selectedSize = Object.keys(productVariants[selectedColor] || {})[0] || "M";
 
 // ELEMENTS
 const colorButtons =
@@ -291,11 +275,6 @@ const colorButtons =
 const sizeButtons =
     document.querySelectorAll(
         ".size-btn"
-    );
-
-const variantStock =
-    document.getElementById(
-        "variant-stock"
     );
 
 // UPDATE VARIANT
@@ -380,24 +359,21 @@ updateVariant();
 // PRODUCT IMAGES
 mainImage.src =
     currentProduct.image;
-const galleryImages = [
-    currentProduct.image,
-    "../assets/images/f2.jpg",
-    "../assets/images/f3.jpg",
-    "../assets/images/f4.jpg"
-];
+const galleryImages = currentProduct.images && currentProduct.images.length
+    ? currentProduct.images
+    : [currentProduct.image];
 
-smallImages.forEach((image, index) => {
-    image.src =
-        galleryImages[index];
-    image.addEventListener(
-        "click",
-        () => {
-            mainImage.src =
-                galleryImages[index];
-        }
-    );
-});
+const smallImageGroup = document.querySelector(".small-image-group");
+if(galleryImages.length <= 1) {
+    if(smallImageGroup) smallImageGroup.style.display = "none";
+} else {
+    smallImages.forEach((image, index) => {
+        image.src = galleryImages[index] || galleryImages[0];
+        image.addEventListener("click", () => {
+            mainImage.src = galleryImages[index] || galleryImages[0];
+        });
+    });
+}
 
 // QUANTITY CONTROLS
 document.getElementById(
@@ -435,7 +411,7 @@ document.getElementById(
 );
 
 // ADD TO CART
-document.getElementById("add-to-cart-btn").addEventListener("click", async () => {
+elements.addToCartBtn.addEventListener("click", async () => {
     const currentVariantStock = productVariants[selectedColor][selectedSize];
     const qty = parseInt(qtyInput.value);
 
@@ -467,7 +443,7 @@ document.getElementById("add-to-cart-btn").addEventListener("click", async () =>
 });
 
 // BUY NOW
-document.getElementById("buy-now-btn").addEventListener("click", () => {
+elements.buyNowBtn.addEventListener("click", () => {
     const currentVariantStock = productVariants[selectedColor][selectedSize];
     const qty = parseInt(qtyInput.value);
 
@@ -489,9 +465,6 @@ document.getElementById("buy-now-btn").addEventListener("click", () => {
     localStorage.setItem("cart", JSON.stringify(cart));
     window.location.href = "checkout.html";
 });
-
-// WISHLIST
-const wishlistBtn = document.getElementById("wishlist-btn");
 
 function updateWishlistButton(){
     const wishlist = JSON.parse(localStorage.getItem("wishlist")) || [];
@@ -530,216 +503,28 @@ if (wishlistBtn) {
 updateWishlistButton();
 
 // RELATED PRODUCTS
-const relatedContainer = document.getElementById("related-products-container");
-const adminProducts = JSON.parse(localStorage.getItem("adminProducts")) || [];
-const relatedProducts = adminProducts.filter(p => p.category === currentProduct.category && p.id !== currentProduct.id).slice(0, 4);
-if(relatedProducts.length === 0){
-
-    if (relatedContainer) {
-        relatedContainer.innerHTML = `
-            <p class="no-products">
-                No related products available right now.
-            </p>
-        `;
-    }
-}
-relatedProducts.forEach(product => {
-    const card = document.createElement("div");
-    card.classList.add("pro");
-    card.innerHTML = `
-        <img src="${product.image}" alt="${product.name}">
-        <div class="des">
-            <span>${product.brand || "Brand"}</span>
-            <h5>${product.name}</h5>
-            <div class="star">
-                <i class="fas fa-star"></i><i class="fas fa-star"></i>
-                <i class="fas fa-star"></i><i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-            </div>
-            <h4>₹${product.price}</h4>
-        </div>
-    `;
-    card.addEventListener("click", () => {
-        localStorage.setItem("selectedProduct", JSON.stringify(product));
-        window.location.href = "product.html";
-    });
-    relatedContainer.appendChild(card);
-});
-
-// PRODUCT REVIEWS SYSTEM
-const reviewForm =
-    document.getElementById(
-        "review-form"
-    );
-
-const reviewContainer =
-    document.getElementById(
-        "review-container"
-    );
+let adminProducts = [];
 
 // REVIEW STORAGE KEY
 const reviewKey =
     `reviews-${currentProduct.id}`;
 
 // LOAD REVIEWS
-let reviews =
-    JSON.parse(
-        localStorage.getItem(
-            reviewKey
-        )
-    ) || [];
+reviewForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = document.getElementById("review-name").value;
+    const rating = parseInt(document.getElementById("review-rating").value);
+    const comment = document.getElementById("review-comment").value;
 
-// RENDER REVIEWS
-function renderReviews(){
-    if (!reviewContainer) return;
-    reviewContainer.innerHTML = "";
-    if(reviews.length === 0){
-        reviewContainer.innerHTML = `
-            <p>
-                No reviews yet.
-            </p>
-        `;
-        return;
-    }
-
-    reviews.forEach((review) => {
-        const reviewBox =
-            document.createElement("div");
-        reviewBox.classList.add(
-            "review-box"
-        );
-
-        let stars = "";
-
-        for(
-            let i = 0;
-            i < review.rating;
-            i++
-        ){
-            stars += `
-                <i class="fas fa-star"></i>
-            `;
-        }
-
-        reviewBox.innerHTML = `
-            <h4>
-                ${review.name}
-            </h4>
-            <div class="review-stars">
-                ${stars}
-            </div>
-            <p>
-                ${review.comment}
-            </p>
-            <div class="review-date">
-                ${review.date}
-            </div>
-        `;
-
-        reviewContainer.appendChild(
-            reviewBox
-        );
+    await apiRequest("/reviews", {
+        method: "POST",
+        body: JSON.stringify({ product_id: currentProduct.id, name, rating, comment })
     });
-}
 
-// SUBMIT REVIEW
-if(reviewForm){
-    reviewForm.addEventListener(
-        "submit",
-        (e) => {        
-            e.preventDefault();
-            const name =
-                document.getElementById(
-                    "review-name"
-                ).value;
-
-            const rating =
-                parseInt(
-                    document.getElementById(
-                        "review-rating"
-                    ).value
-                );
-            
-            const comment =
-                document.getElementById(
-                    "review-comment"
-                ).value;
-            
-            const review = {            
-                name,
-                rating,
-                comment,
-                date:
-                    new Date()
-                    .toLocaleDateString()
-            };
-
-            reviews.unshift(review);        
-            localStorage.setItem(
-                reviewKey,
-                JSON.stringify(reviews)
-            );
-
-            renderReviews();
-            reviewForm.reset();
-            const total =
-                reviews.reduce(
-                    (sum, item) =>
-                        sum + item.rating,
-                    0
-                );
-            
-            const average =
-                (
-                    total /
-                    reviews.length
-                ).toFixed(1);
-            
-            const updatedRatingContainer =
-                document.querySelector(
-                    ".product-rating"
-                );
-            
-            let updatedStars = "";
-            
-            for(
-                let i = 0;
-                i < 5;
-                i++
-            ){
-                if(
-                    i < Math.round(average)
-                ){  
-                    updatedStars += `
-                        <i class="fas fa-star"></i>
-                    `;
-                }else{
-                    updatedStars += `
-                        <i class="far fa-star"></i>
-                    `;
-                }            
-            }
-            updatedRatingContainer.innerHTML = `
-                ${updatedStars}
-                <span id="product-rating-text">
-                    (${average} Ratings)
-                </span>
-            `;
-            notify(
-                "Review submitted! 📝"
-            );
-        }
-    );
-}
-
-// INITIALIZE REVIEWS
-renderReviews();
-
-// RECOMMENDED PRODUCTS ENGINE
-const recommendedContainer =
-    document.getElementById(
-        "recommended-products-container"
-    );
+    notify("Review submitted! 📝");
+    fetchReviews(); // refresh reviews from backend
+    reviewForm.reset();
+});
 
 const wishlist =
     JSON.parse(
@@ -771,117 +556,94 @@ const recentlyViewed =
         )
     ) || [];
 
-let recommendedProducts =
-    adminProducts.filter((item) => {
-
-        // Exclude current product
-        if(
-            item.id ===
-            currentProduct.id
-        ){
-            return false;
+// HELPERS SECTION
+async function fetchAllProducts() {
+    try {
+        const res = await apiRequest("/products");
+        if (res.success && Array.isArray(res.products)) {
+            adminProducts = res.products;
+            renderRelatedProducts();
+            renderRecommendedProducts();
+        } else {
+            adminProducts = [];
+            notify("Failed to fetch products", "error");
+            console.error("Failed to fetch products:", res);
         }
+    } catch (err) {
+        adminProducts = [];
+        notify("Error fetching products", "error");
+        console.error("Error fetching products:", err);
+    }
+}
 
-        // Match category
-        if(
-            item.category ===
-            currentProduct.category
-        ){
-            return true;
+function renderRelatedProducts() {
+    const relatedProducts = adminProducts.filter(p => p.category === currentProduct.category && p.id !== currentProduct.id).slice(0, 4);
+    if (relatedProducts.length === 0) {
+        if (elements.relatedContainer) {
+            elements.relatedContainer.innerHTML = `<p class="no-products">No related products available right now.</p>`;
         }
+        return;
+    }
+    relatedProducts.forEach(product => renderProductCard(product, elements.relatedContainer));
+}
 
-        // Match wishlist category
-        const wishlistMatch =
-            wishlist.find(
-                (wish) =>
-                    wish.category ===
-                    item.category
-            );
+function renderRecommendedProducts() {
+    const recentlyViewed = JSON.parse(localStorage.getItem("recentlyViewed")) || [];
+    const wishlist = JSON.parse(localStorage.getItem("wishlist")) || [];
 
-        if(wishlistMatch){
-            return true;
-        }
-
-        // Match recently viewed category
-        const viewedMatch =
-            recentlyViewed.find(
-                (viewed) =>
-                    viewed.category ===
-                    item.category
-            );
-        if(viewedMatch){
-            return true;
-        }
+    let recommendedProducts = adminProducts.filter(item => {
+        if(item.id === currentProduct.id) return false;
+        if(item.category === currentProduct.category) return true;
+        if(wishlist.find(w => w.category === item.category)) return true;
+        if(recentlyViewed.find(v => v.category === item.category)) return true;
         return false;
-    });
+    }).slice(0, 4);
 
-// Limit recommendations
-recommendedProducts =
-    recommendedProducts.slice(0, 4);
+    if(recommendedProducts.length === 0) {
+        recommendedProducts = adminProducts.filter(item => item.id !== currentProduct.id).slice(0, 4);
+    }
 
-if(recommendedProducts.length === 0){
+    if(recommendedProducts.length === 0) {
+        if(elements.recommendedContainer) elements.recommendedContainer.innerHTML = `<p class="no-products">No recommendations available right now.</p>`;
+        return;
+    }
 
-    recommendedProducts =
-        adminProducts
-        .filter(
-            (item) =>
-                item.id !==
-                currentProduct.id
-        )
-        .slice(0, 4);
+    recommendedProducts.forEach(product => renderProductCard(product, elements.recommendedContainer));
 }
 
-// RENDER RECOMMENDATIONS
-if(recommendedProducts.length === 0){
-    recommendedContainer.innerHTML = `
-        <p class="no-products">
-            No recommendations available right now.
-        </p>
-    `;
-}
+async function renderReviews() {
+    if (!elements.reviewContainer) return;
+    elements.reviewContainer.innerHTML = "";
 
-recommendedProducts.forEach((product) => {
-    const card =
-        document.createElement("div");
-    card.classList.add("pro");
-    card.innerHTML = `
-        <img
-            src="${product.image}"
-            alt="${product.name}"
-        >
-        <div class="des">
-            <span>
-                ${product.brand || "Brand"}
-            </span>
-            <h5>
-                ${product.name}
-            </h5>
-            <div class="star">
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-            </div>
-            <h4>
-                ₹${product.price}
-            </h4>
-        </div>
-    `;
+    try {
+        const res = await apiRequest(`/reviews?product_id=${currentProduct.id}`);
+        const reviews = (res.success && Array.isArray(res.reviews)) ? res.reviews : [];
 
-    card.addEventListener(
-        "click",
-        () => {
-            localStorage.setItem(
-                "selectedProduct",
-                JSON.stringify(product)
-            );
-            window.location.href =
-                "product.html";
+        if(reviews.length === 0){
+            elements.reviewContainer.innerHTML = `<p>No reviews yet.</p>`;
+            return;
         }
-    );
 
-    recommendedContainer.appendChild(
-        card
-    );
-}); 
+        reviews.forEach(review => {
+            const reviewBox = document.createElement("div");
+            reviewBox.classList.add("review-box");
+
+            let stars = "";
+            for(let i=0; i<review.rating; i++){
+                stars += `<i class="fas fa-star"></i>`;
+            }
+
+            reviewBox.innerHTML = `
+                <h4>${review.name}</h4>
+                <div class="review-stars">${stars}</div>
+                <p>${review.comment}</p>
+                <div class="review-date">${review.date}</div>
+            `;
+
+            elements.reviewContainer.appendChild(reviewBox);
+        });
+    } catch(err) {
+        console.error("Error fetching reviews:", err);
+        notify("Error loading reviews", "error");
+    }
+}

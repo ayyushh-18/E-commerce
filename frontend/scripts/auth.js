@@ -1,17 +1,26 @@
-console.log("Authentication system loaded successfully!");
-const API_BASE = "http://localhost:5000/api";
-const notify = (message, type = "info") => {
-    if (typeof showToast === "function") {
-        showToast(message, type);
-    } else {
-        alert(message);
-    }
+const elements = {
+    signupForm: document.getElementById("signup-form"),
+    signinForm: document.getElementById("signin-form"),
+
+    signupName: document.getElementById("signup-name"),
+    signupEmail: document.getElementById("signup-email"),
+    signupPassword: document.getElementById("signup-password"),
+
+    signinEmail: document.getElementById("signin-email"),
+    signinPassword: document.getElementById("signin-password"),
+
+    authLink: document.getElementById("auth-link"),
+    dropdown: document.getElementById("profile-dropdown"),
+    logoutBtn: document.getElementById("logout-btn")
 };
 
-// =============================
-// BACKEND AUTH FUNCTIONS
-// =============================
+const emailRegex =
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const passwordRegex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+
+// BACKEND AUTH FUNCTIONS
 const signupUser = async (name, email, password) => {
     const res = await fetch(`${API_BASE}/auth/signup`, {
         method: "POST",
@@ -41,20 +50,53 @@ const loginUser = async (email, password) => {
     return await res.json();
 };
 
-// =============================
+function toggleFormLoading(button, isLoading, loadingText = "Please wait...") {
+    if(!button) return;
+
+    if(isLoading){
+        button.dataset.originalText = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = loadingText;
+    } else {
+        button.disabled = false;
+        button.innerHTML = button.dataset.originalText || "Submit";
+    }
+}
+
+const clearAuthData = () => {
+    localStorage.removeItem(
+        "token"
+    );
+
+    localStorage.removeItem(
+        "refreshToken"
+    );
+
+    localStorage.removeItem(
+        "user"
+    );
+
+    localStorage.removeItem(
+        "cart"
+    );
+
+    localStorage.removeItem(
+        "wishlist"
+    );
+};
+
 // EMAIL SIGNUP
-// =============================
-
-const signupForm = document.getElementById("signup-form");
-if(signupForm){
-    signupForm.addEventListener("submit", async (e) => {
+if(elements.signupForm){
+    elements.signupForm.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const name = document.getElementById("signup-name").value.trim();
-        const email = document.getElementById("signup-email").value.trim();
-        const password = document.getElementById("signup-password").value;
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
+        if(
+            e.submitter?.disabled
+        ){
+            return;
+        }
+        const name = elements.signupName.value.trim();
+        const email = elements.signupEmail.value.trim();
+        const password = elements.signupPassword.value;
         if (!name) {
             notify("Name is required", "error");
             return;
@@ -65,10 +107,15 @@ if(signupForm){
             return;
         }
 
-        if (password.length < 8) {
-            notify("Password must be at least 8 characters", "error");
+        if (!passwordRegex.test(password)) {
+            notify(
+                "Password must contain uppercase, lowercase, number and 8 characters",
+                "error"
+            );
             return;
         }
+        const submitBtn = elements.signupForm.querySelector("button[type='submit']");
+        toggleFormLoading(submitBtn, true, "Creating Account...");
         try {
             const response = await signupUser(name, email, password);
             if(response.success){
@@ -80,27 +127,47 @@ if(signupForm){
         } catch(error){
             console.error(error);
             notify("Signup failed. Please try again.", "error");
+        } finally {
+            toggleFormLoading(submitBtn, false);
         }
     });
 }
 
-// =============================
 // EMAIL SIGNIN
-// =============================
-
-const signinForm = document.getElementById("signin-form");
-if(signinForm){
-    signinForm.addEventListener("submit", async (e) => {
+if(elements.signinForm){
+    elements.signinForm.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const email = document.getElementById("signin-email").value.trim();
-        const password = document.getElementById("signin-password").value;
+        if(
+            e.submitter?.disabled
+        ){
+            return;
+        }
+        const email = elements.signinEmail.value.trim();
+        const password = elements.signinPassword.value.trim();
+        if (!emailRegex.test(email)) {
+            notify(
+                "Enter a valid email",
+                "error"
+            );
+            return;
+        }
+        if (!password) {
+            notify(
+                "Password is required",
+                "error"
+            );
+            return;
+        }
+        const submitBtn = elements.signinForm.querySelector("button[type='submit']");
+        toggleFormLoading(submitBtn, true, "Signing In...");
+
         try {
             const response = await loginUser(email, password);
             if(response.success){
                 // Store auth data
                 localStorage.setItem("token", response.accessToken);
                 localStorage.setItem("refreshToken", response.refreshToken);
-                localStorage.setItem("user", JSON.stringify(response.user));
+                setJSON("user", response.user);
 
                 notify("Login Successful!", "success");
 
@@ -111,52 +178,73 @@ if(signinForm){
         } catch(error){
             console.error(error);
             notify("Login failed. Please try again.", "error");
+        } finally {
+            toggleFormLoading(submitBtn, false);
         }
     });
 }
 
-// =============================
 // AUTH NAVBAR PROFILE SYSTEM (JWT)
-// =============================
+const token =
+    getJSON("token") ||
+    localStorage.getItem("token");
 
-const token = localStorage.getItem("token");
-const authLink = document.getElementById("auth-link");
-const dropdown = document.getElementById("profile-dropdown");
-const logoutBtn = document.getElementById("logout-btn");
-
-if(authLink){
+if(elements.authLink){
     if(token){
-        authLink.innerHTML = `<i class="fas fa-user"></i>`;
-        authLink.href = "#";
-        authLink.classList.add("profile-active");
+        elements.authLink.innerHTML = `<i class="fas fa-user"></i>`;
+        elements.authLink.href = "#";
+        elements.authLink.classList.add("profile-active");
 
         // Toggle Dropdown
-        authLink.addEventListener("click", (e) => {
+        elements.authLink.addEventListener("click", (e) => {
             e.preventDefault();
-            if(dropdown) dropdown.classList.toggle("active");
+            if(elements.dropdown){
+                elements.dropdown.classList.toggle("active");
+            }
         });
 
         // Logout
-        if(logoutBtn){
-            logoutBtn.addEventListener("click", () => {
-                localStorage.removeItem("token");
-                localStorage.removeItem("refreshToken");
-                localStorage.removeItem("user");
-
-                window.location.href = "index.html";
+        if(elements.logoutBtn){
+            elements.logoutBtn.addEventListener("click", () => {
+                clearAuthData();
+                if(elements.dropdown){
+                    elements.dropdown.classList.remove("active");
+                }
+                notify("Logged out successfully", "success");
+                setTimeout(() => {
+                    window.location.href = "index.html";
+                }, 800);
             });
         }
 
         // Close Dropdown on outside click
         document.addEventListener("click", (e) => {
             if(!e.target.closest(".profile-wrapper")){
-                if(dropdown) dropdown.classList.remove("active");
+                if(elements.dropdown){
+                    elements.dropdown.classList.remove("active");
+                }
             }
         });
+        document.addEventListener(
+            "keydown",
+            (e) => {
+                if(
+                    e.key === "Escape" &&
+                    elements.dropdown
+                ){        
+                    elements.dropdown.classList.remove(
+                        "active"
+                    );
+                }
+            }
+        );
     } else {
-        authLink.innerHTML = "Sign In";
-        authLink.href = "signin.html";
-        authLink.classList.remove("profile-active");
-        if(dropdown) dropdown.classList.remove("active");
+        elements.authLink.innerHTML = "Sign In";
+        elements.authLink.href = "signin.html";
+        elements.authLink.classList.remove("profile-active");
+
+        if(elements.dropdown){
+            elements.dropdown.classList.remove("active");
+        }
     }
 }

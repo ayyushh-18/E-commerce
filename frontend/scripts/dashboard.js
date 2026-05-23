@@ -1,71 +1,115 @@
-console.log("Dashboard loaded successfully!");
+const user = requireAuth();
 
-const token = localStorage.getItem("token");
-const user = JSON.parse(
-    localStorage.getItem("user")
-);
-
-if (!token || !user) {
-    window.location.href = "signin.html";
-} else {
+if(user){
     loadUserData(user);
 }
 
+const elements = {
+    userName:
+        document.getElementById(
+            "user-name"
+        ),
+
+    userEmail:
+        document.getElementById(
+            "user-email"
+        ),
+
+    settingsName:
+        document.getElementById(
+            "settings-name"
+        ),
+
+    settingsEmail:
+        document.getElementById(
+            "settings-email"
+        ),
+
+    menuItems:
+        document.querySelectorAll(
+            ".dashboard-menu li"
+        ),
+
+    tabs:
+        document.querySelectorAll(
+            ".dashboard-tab"
+        ),
+
+    wishlistContainer:
+        document.getElementById(
+            "wishlist-items"
+        ),
+
+    wishlistCount:
+        document.getElementById(
+            "wishlist-count"
+        ),
+
+    cartContainer:
+        document.getElementById(
+            "saved-cart-items"
+        ),
+
+    cartCount:
+        document.getElementById(
+            "cart-count-dashboard"
+        ),
+
+    ordersContainer:
+        document.getElementById(
+            "orders-list"
+        ),
+
+    ordersCount:
+        document.getElementById(
+            "orders-count"
+        ),
+
+    settingsForm:
+        document.getElementById(
+            "settings-form"
+        )
+};
+
+const renderEmptyState = (
+    container,
+    message
+) => {
+    if(container){
+        container.innerHTML =
+            `<p>${message}</p>`;
+    }
+};
+
 function loadUserData(user){
-    const userName = document.getElementById("user-name");
-    const userEmail = document.getElementById("user-email");
-    const settingsName = document.getElementById(
-        "settings-name"
-    );
-
-    const settingsEmail = document.getElementById(
-        "settings-email"
-    );
-
-    if (userName) {
-    userName.innerText = user.name || "User";
+    if (elements.userName) {
+    elements.userName.innerText = user.name || "User";
     }
-    
-    if (userEmail) {
-        userEmail.innerText = user.email || "";
+    if (elements.userEmail) {
+        elements.userEmail.innerText = (user.email || "").trim();
     }
-    
-    if (settingsName) {
-        settingsName.value = user.name || "";
+    if (elements.settingsName) {
+        elements.settingsName.value = user.name || "";
     }
-    
-    if (settingsEmail) {
-        settingsEmail.value = user.email || "";
+    if (elements.settingsEmail) {
+        elements.settingsEmail.value = (user.email || "").trim();
     }
 }
 
-const menuItems = document.querySelectorAll(
-    ".dashboard-menu li"
-);
-
-const tabs = document.querySelectorAll(
-    ".dashboard-tab"
-);
-
-menuItems.forEach((item) => {
+elements.menuItems.forEach((item) => {
     item.addEventListener("click", () => {
-        menuItems.forEach((menu) => {
+        elements.menuItems.forEach((menu) => {
             menu.classList.remove("active-tab");
         });
-
-        tabs.forEach((tab) => {
+        elements.tabs.forEach((tab) => {
             tab.classList.remove("active");
         });
-
         item.classList.add("active-tab");
-
         const target = item.dataset.tab;
-
         const targetElement =
             document.getElementById(
                 target
             );
-        
         if (targetElement) {
             targetElement.classList.add(
                 "active"
@@ -74,127 +118,106 @@ menuItems.forEach((item) => {
     });
 });
 
+const wishlist =
+    getJSON("wishlist") || [];
 
-const wishlist = JSON.parse(
-    localStorage.getItem("wishlist")
-) || [];
-
-const wishlistContainer = document.getElementById(
-    "wishlist-items"
-);
-
-const wishlistCount =
-    document.getElementById(
-        "wishlist-count"
-    );
-
-if (wishlistCount) {
-    wishlistCount.innerText =
+if (elements.wishlistCount) {
+    elements.wishlistCount.innerText =
         wishlist.length;
 }
 
 if(wishlist.length === 0){
-    if (wishlistContainer) {
-        wishlistContainer.innerHTML =
-            "<p>No wishlist items found.</p>";
-    }
+    renderEmptyState(
+        elements.wishlistContainer,
+        "No wishlist items found."
+    );
 }else{
     wishlist.forEach((item) => {
         const p = document.createElement("p");
-        p.innerText = item;
-        if (wishlistContainer) {
-            wishlistContainer.appendChild(p);
+        p.innerText =
+            item.name || item;
+        if (elements.wishlistContainer) {
+            elements.wishlistContainer.appendChild(p);
         }
     });
 }
 
-const cart = JSON.parse(
-    localStorage.getItem("cart")
-) || [];
+const cart =
+    getJSON("cart") || [];
 
-const cartContainer = document.getElementById(
-    "saved-cart-items"
-);
-
-const cartCount =
-    document.getElementById(
-        "cart-count-dashboard"
-    );
-
-if (cartCount) {
-    cartCount.innerText =
+if (elements.cartCount) {
+    elements.cartCount.innerText =
         cart.length;
 }
 
 if(cart.length === 0){
-    if (cartContainer) {
-        cartContainer.innerHTML =
-            "<p>No saved cart items found.</p>";
-    }
+    renderEmptyState(
+        elements.cartContainer,
+        "No saved cart items found."
+    );
 }else{
     cart.forEach((item) => {
         const p = document.createElement("p");
         p.innerText = `${item.name} (${item.qty})`;
-        if (cartContainer) {
-            cartContainer.appendChild(p);
+        if (elements.cartContainer) {
+            elements.cartContainer.appendChild(p);
         }
     });
 }
 
-const orders = JSON.parse(
-    localStorage.getItem("orders")
-) || [];
+const orders =
+    getJSON("orders") || [];
 
-const ordersContainer = document.getElementById(
-    "orders-list"
-);
-
-const ordersCount =
-    document.getElementById(
-        "orders-count"
-    );
-
-if (ordersCount) {
-    ordersCount.innerText =
+if (elements.ordersCount) {
+    elements.ordersCount.innerText =
         orders.length;
 }
 
 if(orders.length === 0){
-    if (ordersContainer) {
-        ordersContainer.innerHTML =
-            "<p>No orders found.</p>";
-    }
+    renderEmptyState(
+        elements.ordersContainer,
+        "No orders found."
+    );
 }else{
     orders.forEach((order) => {
         const p = document.createElement("p");
-
         p.innerText =
             `${order.id} • ${order.date}`;
 
-        if (ordersContainer) {
-            ordersContainer.appendChild(p);
+        if (elements.ordersContainer) {
+            elements.ordersContainer.appendChild(p);
         }
     });
 }
 
-const settingsForm = document.getElementById(
-    "settings-form"
-);
-
-if (settingsForm) {
-    settingsForm.addEventListener("submit", (e) => {
+if (elements.settingsForm) {
+    elements.settingsForm.addEventListener("submit", (e) => {
         e.preventDefault();
+        const updatedUser = {
+            ...user,
+            name:
+                elements.settingsName.value.trim(),
+            email:
+                elements.settingsEmail.value.trim()
+        };
+        setJSON(
+            "user",
+            updatedUser
+        );
 
-        if (typeof notify === "function") {
-            notify(
-                "Profile updated successfully!",
-                "success"
-            );
-        } else {
-            alert(
-                "Profile updated successfully!"
-            );
+        if(elements.userName){
+            elements.userName.innerText =
+                updatedUser.name;
         }
+
+        if(elements.userEmail){
+            elements.userEmail.innerText =
+                updatedUser.email;
+        }
+        notify(
+            "Profile updated successfully!",
+            "success"
+        );
     });
 }
 
@@ -202,24 +225,12 @@ if (settingsForm) {
 function openTabFromHash(){
     const hash =
         window.location.hash.replace("#", "");
-
     if(!hash) return;
-
-    const menuItems =
-        document.querySelectorAll(
-            ".dashboard-menu li"
-        );
-
-    const tabs =
-        document.querySelectorAll(
-            ".dashboard-tab"
-        );
-        
-    menuItems.forEach((menu) => {
+    elements.menuItems.forEach((menu) => {
         menu.classList.remove("active-tab");
     });
 
-    tabs.forEach((tab) => {
+    elements.tabs.forEach((tab) => {
         tab.classList.remove("active");
     });
 

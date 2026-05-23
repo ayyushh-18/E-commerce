@@ -1,63 +1,58 @@
-console.log("Shop page loaded successfully!");
-const API_BASE = "http://localhost:5000/api";
-
-// API BASE URL
-const notify = (message, type = "info") => {
-    if (typeof showToast === "function") {
-        showToast(message, type);
-    } else {
-        alert(message);
-    }
-};
-
+// SHOP PAGE INITIALIZED
+// Shared helpers are now provided globally from utils.js
 // PRODUCTS ARRAY
 let allProducts = [];
 
 // ELEMENTS
-const searchInput = document.getElementById("search-input");
-const filterButtons = document.querySelectorAll(".filter-btn");
-const sortSelect = document.getElementById("sort-select");
-const productContainer = document.getElementById("product-container");
+const elements = {
+    searchInput: document.getElementById("search-input"),
+    filterButtons: document.querySelectorAll(".filter-btn"),
+    sortSelect: document.getElementById("sort-select"),
+    productContainer: document.getElementById("product-container")
+};
 
 // FETCH PRODUCTS FROM BACKEND
 async function fetchProducts() {
     try {
-        const res = await fetch(`${API_BASE}/products`, {
-            headers: {
-                "Content-Type": "application/json"
-            }
-        });
-        const data = await res.json();
+        if(elements.productContainer){
+            elements.productContainer.innerHTML =
+                "<h3>Loading products...</h3>";
+        }
+        const data = await apiRequest("/products");
         if(data.success) {
             allProducts = data.products;
             renderProducts(allProducts);
         } else {
-            if (productContainer) {
-                productContainer.innerHTML =
+            if (elements.productContainer) {
+                elements.productContainer.innerHTML =
                     `<h3>${data.message}</h3>`;
             }
         }
     } catch(error) {
         console.error(error);
-        if (productContainer) {
-            productContainer.innerHTML =
+        if (elements.productContainer) {
+            elements.productContainer.innerHTML =
                 `<h3>Failed to load products.</h3>`;
         }
     }
 }
 
+function renderStars(rating = 5){
+    return Array.from(
+        { length: rating },
+        () => `<i class="fas fa-star"></i>`
+    ).join("");
+}
+
 // RENDER PRODUCTS
 function renderProducts(products) {
-    const productContainer = document.getElementById("product-container");
-
-    if (!productContainer) {
+    if (!elements.productContainer) {
         return;
     }
-
-    productContainer.innerHTML = "";
-
-    if(products.length === 0){
-        productContainer.innerHTML = `<h3>No products found.</h3>`;
+    elements.productContainer.innerHTML = "";
+    if(!Array.isArray(products) || products.length === 0){
+        elements.productContainer.innerHTML =
+            `<h3>No products found.</h3>`;    
         return;
     }
 
@@ -73,9 +68,12 @@ function renderProducts(products) {
                 <span>${product.category || 'Brand'}</span>
                 <h5>${displayName}</h5>
                 <div class="star">
-                    <i class="fas fa-star"></i><i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i><i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i>
+                    ${renderStars(
+                        Math.min(
+                            Math.max(Number(product.rating) || 5, 1),
+                            5
+                        )
+                    )}
                 </div>
                 <h4>₹${product.price}</h4>
                 <p class="stock-info">${product.stock > 0 ? `Stock: ${product.stock}` : 'Out Of Stock'}</p>
@@ -87,7 +85,7 @@ function renderProducts(products) {
 
         // Navigate to product page
         productCard.addEventListener("click", () => {
-            localStorage.setItem("selectedProduct", JSON.stringify(product));
+            setJSON("selectedProduct", product);
             window.location.href = "product.html";
         });
 
@@ -110,11 +108,17 @@ function renderProducts(products) {
                 if(typeof addToCartFromProduct === "function"){
                     await addToCartFromProduct(item);
                 } else {
-                    let cart = JSON.parse(localStorage.getItem("cart")) || [];
-                    const existing = cart.find(p => p.id === item.id);
-                    if(existing) existing.qty++;
-                    else cart.push(item);
-                    localStorage.setItem("cart", JSON.stringify(cart));
+                    let cart = getJSON("cart") || [];
+                    const existingIndex = cart.findIndex(
+                        p => p.id === item.id
+                    );
+                    
+                    if(existingIndex >= 0){
+                        cart[existingIndex].qty += 1;
+                    } else {
+                        cart.push(item);
+                    }
+                    setJSON("cart", cart);
                     notify(
                         "Added to cart 🛍️",
                         "success"
@@ -122,7 +126,7 @@ function renderProducts(products) {
                 }
             });
         }
-        productContainer.appendChild(productCard);
+        elements.productContainer.appendChild(productCard);
     });
 }
 
@@ -130,10 +134,10 @@ function renderProducts(products) {
 document.addEventListener("DOMContentLoaded", () => {
     fetchProducts();
     // SEARCH FILTER
-    if (searchInput) {
-        searchInput.addEventListener("keyup", () => {
+    if (elements.searchInput) {
+        elements.searchInput.addEventListener("keyup", () => {
             const value =
-                searchInput.value.toLowerCase();
+                elements.searchInput.value.trim().toLowerCase();
             const filtered =
                 allProducts.filter((product) =>
                     (product.name || "")
@@ -145,9 +149,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // CATEGORY FILTER
-    filterButtons.forEach((button) => {
+    elements.filterButtons.forEach((button) => {
         button.addEventListener("click", () => {
-            filterButtons.forEach((btn) =>
+            elements.filterButtons.forEach((btn) =>
                 btn.classList.remove(
                     "active-filter"
                 )
@@ -177,30 +181,30 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // SORT PRODUCTS
-    if (sortSelect) {
-        sortSelect.addEventListener(
+    if (elements.sortSelect) {
+        elements.sortSelect.addEventListener(
             "change",
             () => {
                 let sortedProducts =
                     [...allProducts];
 
                 if (
-                    sortSelect.value ===
+                    elements.sortSelect.value ===
                     "low-high"
                 ) {
                     sortedProducts.sort(
                         (a, b) =>
-                            a.price - b.price
+                            Number(a.price) - Number(b.price)
                     );
                 }
 
                 if (
-                    sortSelect.value ===
+                    elements.sortSelect.value ===
                     "high-low"
                 ) {
                     sortedProducts.sort(
                         (a, b) =>
-                            b.price - a.price
+                            Number(b.price) - Number(a.price)
                     );
                 }
 

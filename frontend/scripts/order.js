@@ -1,16 +1,14 @@
-console.log("Order tracking page loaded successfully!");
 
 // LOAD ORDERS
 const orders =
-    JSON.parse(
-        localStorage.getItem(
-            "orders"
-        )
-    ) || [];
+    getJSON("orders") || [];
 
 // GET LATEST ORDER
 const latestOrder =
-    orders[orders.length - 1];
+    Array.isArray(orders) &&
+    orders.length > 0
+        ? orders[orders.length - 1]
+        : null;
 
 // REDIRECT IF NO ORDER
 if(!latestOrder){
@@ -20,29 +18,51 @@ if(!latestOrder){
 }
 
 // ELEMENTS
-const orderItemsContainer =
-    document.getElementById(
-        "order-items-container"
-    );
+const elements = {
 
-// RENDER ORDER INFO
-const orderIdElement =
-    document.getElementById(
-        "order-id"
-    );
+    orderItemsContainer:
+        document.getElementById(
+            "order-items-container"
+        ),
 
-const orderDateElement =
-    document.getElementById(
-        "order-date"
-    );
+    orderId:
+        document.getElementById(
+            "order-id"
+        ),
 
-if (orderIdElement) {
-    orderIdElement.innerText =
+    orderDate:
+        document.getElementById(
+            "order-date"
+        ),
+
+    statusBadge:
+        document.getElementById(
+            "status-badge"
+        ),
+
+    processingStep:
+        document.getElementById(
+            "processing-step"
+        ),
+
+    shippedStep:
+        document.getElementById(
+            "shipped-step"
+        ),
+
+    deliveredStep:
+        document.getElementById(
+            "delivered-step"
+        )
+};
+
+if (elements.orderId) {
+    elements.orderId.innerText =
         latestOrder.id || "N/A";
 }
 
-if (orderDateElement) {
-    orderDateElement.innerText =
+if (elements.orderDate) {
+    elements.orderDate.innerText =
         latestOrder.date || "N/A";
 }
 
@@ -51,38 +71,18 @@ const status =
     latestOrder.status ||
     "Pending";
 
-const statusBadge =
-    document.getElementById(
-        "status-badge"
-    );
-
-if (statusBadge) {
-    statusBadge.innerText =
+if (elements.statusBadge) {
+    elements.statusBadge.innerText =
         status;
 }
 
-// TIMELINE
-const processingStep =
-    document.getElementById(
-        "processing-step"
-    );
-
-const shippedStep =
-    document.getElementById(
-        "shipped-step"
-    );
-
-const deliveredStep =
-    document.getElementById(
-        "delivered-step"
-    );
 if (
     status === "Processing" ||
     status === "Shipped" ||
     status === "Delivered"
 ) {
-    if (processingStep) {
-        processingStep.classList.add(
+    if (elements.processingStep) {
+        elements.processingStep.classList.add(
             "active-step"
         );
     }
@@ -91,8 +91,8 @@ if (
     status === "Shipped" ||
     status === "Delivered"
 ) {
-    if (shippedStep) {
-        shippedStep.classList.add(
+    if (elements.shippedStep) {
+        elements.shippedStep.classList.add(
             "active-step"
         );
     }
@@ -100,8 +100,8 @@ if (
 if (
     status === "Delivered"
 ) {
-    if (deliveredStep) {
-        deliveredStep.classList.add(
+    if (elements.deliveredStep) {
+        elements.deliveredStep.classList.add(
             "active-step"
         );
     }
@@ -109,9 +109,9 @@ if (
 
 // RENDER ITEMS
 const orderItems =
-    latestOrder.items || [];
+    latestOrder?.items || [];
 
-orderItems.forEach((item) => {
+(orderItems || []).forEach((item) => {
     const div =
         document.createElement("div");
     div.classList.add(
@@ -121,7 +121,7 @@ orderItems.forEach((item) => {
     div.innerHTML = `
         <div class="order-item-left">
             <img
-                src="${item.img || 'images/default-product.png'}"
+                src="${defaultImage(item.img)}"
                 alt="${item.name || 'Product'}"
             >
             <div>
@@ -134,14 +134,15 @@ orderItems.forEach((item) => {
             </div>
         </div>
         <h4>
-            ₹${parseFloat(
-                item.price || 0
+            ₹${(
+                (parseFloat(item.price) || 0) *
+                (item.qty || 1)
             ).toFixed(2)}
         </h4>
     `;
 
-    if (orderItemsContainer) {
-        orderItemsContainer.appendChild(
+    if (elements.orderItemsContainer) {
+        elements.orderItemsContainer.appendChild(
             div
         );
     }

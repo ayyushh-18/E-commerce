@@ -30,14 +30,36 @@ const setJSON = (key, value) => {
 // API REQUEST WRAPPER
 const apiRequest = async (url, options = {}) => {
     try {
-        const token = getJSON("token") || localStorage.getItem("token");
+        const token = localStorage.getItem("token");
         const headers = {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
             ...options.headers
         };
         const res = await fetch(`${API_BASE}${url}`, { ...options, headers });
-        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+        // HANDLE TOKEN EXPIRY
+        if(res.status === 401){
+        
+            localStorage.removeItem("token");
+            localStorage.removeItem("refreshToken");
+            localStorage.removeItem("user");
+        
+            notify("Session expired. Please login again.", "error");
+        
+            setTimeout(() => {
+                window.location.href = "signin.html";
+            }, 1000);
+        
+            return {
+                success: false,
+                message: "Unauthorized"
+            };
+        }
+
+        if (!res.ok){
+            throw new Error(`Request failed: ${res.status}`);
+        }
+
         return await res.json();
     } catch (error) {
         console.error(`API request error (${url}):`, error);
@@ -58,14 +80,22 @@ const requireAuth = () => {
     const token = localStorage.getItem("token");
     const user = getJSON("user");
     if (!token || !user) {
-        window.location.href = "signin.html";
+        notify("Please sign in to continue", "error");
+        setTimeout(() => {
+            window.location.href = "signin.html";
+        }, 800);
+
         return null;
     }
     return user;
 };
 
 // DEFAULT IMAGE FALLBACK
-const defaultImage = (url) => url || "images/default-product.png";
+const defaultImage = (url) => {
+    return url && url.trim()
+        ? url
+        : "images/default-product.png";
+};
 
 // SAFE ARRAY MAP/FOREACH
 const safeForEach = (arr, callback) => {
@@ -73,18 +103,16 @@ const safeForEach = (arr, callback) => {
 };
 const safeMap = (arr, callback) => (Array.isArray(arr) ? arr.map(callback) : []);
 
-// EXPORT ALL HELPERS
-export {
-    API_BASE,
-    notify,
-    getJSON,
-    setJSON,
-    apiRequest,
-    $,
-    $$,
-    formatPrice,
-    requireAuth,
-    defaultImage,
-    safeForEach,
-    safeMap
-};
+// GLOBAL HELPERS AVAILABLE ACROSS PROJECT
+window.API_BASE = API_BASE;
+window.notify = notify;
+window.getJSON = getJSON;
+window.setJSON = setJSON;
+window.apiRequest = apiRequest;
+window.$ = $;
+window.$$ = $$;
+window.formatPrice = formatPrice;
+window.requireAuth = requireAuth;
+window.defaultImage = defaultImage;
+window.safeForEach = safeForEach;
+window.safeMap = safeMap;

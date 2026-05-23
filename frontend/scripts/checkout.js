@@ -1,62 +1,122 @@
-console.log("Checkout page loaded successfully!");
-const API_BASE = "http://localhost:5000/api";
+// CHECKOUT PAGE INITIALIZED
+// Shared helpers are provided globally from utils.js
+const cart = getJSON("cart") || [];
 
-// LOAD CART
-const notify = (message, type = "info") => {
-    if (typeof showToast === "function") {
-        showToast(message, type);
-    } else {
-        alert(message);
-    }
-};
-const cart = JSON.parse(localStorage.getItem("cart")) || [];
-
-if(cart.length === 0){
+if(!Array.isArray(cart) || cart.length === 0){
     notify("Your cart is empty!", "error");
     window.location.href = "cart.html";
 }
 
-const checkoutItems = document.getElementById("checkout-items");
-const subtotalElement = document.getElementById("checkout-subtotal");
-const taxElement = document.getElementById("checkout-tax");
-const totalElement = document.getElementById("checkout-total");
+const elements = {
+    checkoutItems:
+        document.getElementById(
+            "checkout-items"
+        ),
+
+    subtotal:
+        document.getElementById(
+            "checkout-subtotal"
+        ),
+
+    tax:
+        document.getElementById(
+            "checkout-tax"
+        ),
+
+    total:
+        document.getElementById(
+            "checkout-total"
+        ),
+
+    cardDetails:
+        document.getElementById(
+            "card-details"
+        ),
+
+    checkoutForm:
+        document.getElementById(
+            "checkout-form"
+        ),
+
+    paymentMethods:
+        document.querySelectorAll(
+            'input[name="payment"]'
+        ),
+
+    fullName:
+        document.getElementById(
+            "full-name"
+        ),
+
+    email:
+        document.getElementById(
+            "email"
+        ),
+
+    phone:
+        document.getElementById(
+            "phone"
+        ),
+
+    city:
+        document.getElementById(
+            "city"
+        ),
+
+    state:
+        document.getElementById(
+            "state"
+        ),
+
+    zip:
+        document.getElementById(
+            "zip"
+        ),
+
+    address:
+        document.getElementById(
+            "address"
+        )
+};
 
 // RENDER SUMMARY
 function renderCheckout(){
-    if (!checkoutItems) return;
+    if (!elements.checkoutItems) return;
 
-    checkoutItems.innerHTML = "";
+    elements.checkoutItems.innerHTML = "";
     let subtotal = 0;
 
     cart.forEach((item) => {
         const price =
             parseFloat(item.price) || 0;
-        subtotal += price * item.qty;
+        subtotal += price * (item.qty || 1);
 
         const div = document.createElement("div");
         div.classList.add("checkout-item");
         div.innerHTML = `
-            <span>${item.name} (${item.qty})</span>
-            <span>₹${price * item.qty}</span>
+            <span>${item.name} (${item.qty || 1})</span>
+            <span>₹${(
+                price * (item.qty || 1)
+            ).toFixed(2)}</span>
         `;
-        checkoutItems.appendChild(div);
+        elements.checkoutItems.appendChild(div);
     });
 
     const tax = subtotal * 0.18;
     const total = subtotal + tax;
 
-    if (subtotalElement) {
-        subtotalElement.innerText =
-            `₹${subtotal}`;
+    if (elements.subtotal) {
+        elements.subtotal.innerText =
+            `₹${subtotal.toFixed(2)}`;
     }
 
-    if (taxElement) {
-        taxElement.innerText =
+    if (elements.tax) {
+        elements.tax.innerText =
             `₹${tax.toFixed(2)}`;
     }
 
-    if (totalElement) {
-        totalElement.innerText =
+    if (elements.total) {
+        elements.total.innerText =
             `₹${total.toFixed(2)}`;
     }
 }
@@ -64,13 +124,10 @@ function renderCheckout(){
 renderCheckout();
 
 // PAYMENT METHOD TOGGLE
-const paymentMethods = document.querySelectorAll('input[name="payment"]');
-const cardDetails = document.getElementById("card-details");
-
-paymentMethods.forEach((method) => {
+elements.paymentMethods.forEach((method) => {
     method.addEventListener("change", () => {
-        if (cardDetails) {
-            cardDetails.style.display =
+        if (elements.cardDetails) {
+            elements.cardDetails.style.display =
                 method.value === "Card"
                     ? "block"
                     : "none";
@@ -79,13 +136,11 @@ paymentMethods.forEach((method) => {
 });
 
 // PLACE ORDER
-const checkoutForm = document.getElementById("checkout-form");
-
-if (checkoutForm) {
-checkoutForm.addEventListener("submit", async (e) => {
+if (elements.checkoutForm) {
+elements.checkoutForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    if(cart.length === 0){
+    if(!Array.isArray(cart) || cart.length === 0){
         notify("Your cart is empty!", "error");
         return;
     }
@@ -103,24 +158,48 @@ checkoutForm.addEventListener("submit", async (e) => {
         return;
     }
 
+    if(
+        !elements.fullName.value.trim() ||
+        !elements.email.value.trim() ||
+        !elements.phone.value.trim()
+    ){
+        notify(
+            "Please fill all required customer details",
+            "error"
+        );
+        return;
+    }
+
     const order = {
         customer: {
-            name: document.getElementById("full-name").value,
-            email: document.getElementById("email").value,
-            phone: document.getElementById("phone").value
+            name:
+                elements.fullName.value.trim(),
+
+            email:
+                elements.email.value.trim(),
+
+            phone:
+                elements.phone.value.trim()
         },
         address: {
-            city: document.getElementById("city").value,
-            state: document.getElementById("state").value,
-            zip: document.getElementById("zip").value,
-            fullAddress: document.getElementById("address").value
+            city:
+                elements.city.value.trim(),
+
+            state:
+                elements.state.value.trim(),
+
+            zip:
+                elements.zip.value.trim(),
+
+            fullAddress:
+                elements.address.value.trim()
         },
         paymentMethod:
             selectedPayment.value,
         items: cart,
-        total: totalElement
+        total: elements.total
             ? parseFloat(
-                totalElement.innerText.replace(
+                elements.total.innerText.replace(
                     /[^\d\.]/g,
                     ""
                 )
@@ -129,23 +208,19 @@ checkoutForm.addEventListener("submit", async (e) => {
     };
 
     try {
-        const token = localStorage.getItem("token");
-        const res = await fetch(`${API_BASE}/orders`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                ...(token ? { Authorization: `Bearer ${token}` } : {})
-            },
-            body: JSON.stringify(order)
-        });
-
-        const data = await res.json();
+        const data = await apiRequest(
+            "/orders",
+            {
+                method: "POST",
+                body: JSON.stringify(order)
+            }
+        );
         if(data.success){
             notify(
                 "Order placed successfully! 🎉",
                 "success"
             );
-            localStorage.removeItem("cart");
+            setJSON("cart", []);
             window.location.href = "order.html";
         } else {
             notify(

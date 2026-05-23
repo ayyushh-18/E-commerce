@@ -1,25 +1,77 @@
-console.log("Contact page loaded successfully!");
+// ELEMENTS
+const elements = {
+    contactForm:
+        document.getElementById(
+            "contact-form"
+        ),
 
-const contactForm = document.getElementById("contact-form");
+    name:
+        document.getElementById(
+            "name"
+        ),
 
-contactForm.addEventListener("submit", (e) => {
+    email:
+        document.getElementById(
+            "email"
+        ),
 
-    e.preventDefault();
+    subject:
+        document.getElementById(
+            "subject"
+        ),
 
-    const name = document.getElementById("name").value.trim();
-    const email = document.getElementById("email").value.trim();
-    const subject = document.getElementById("subject").value.trim();
-    const message = document.getElementById("message").value.trim();
+    message:
+        document.getElementById(
+            "message"
+        )
+};
 
-    if(!name || !email || !subject || !message){
-        alert("Please fill all fields.");
-        return;
-    }
+// CONTACT FORM
+if(elements.contactForm){
+    elements.contactForm.addEventListener(
+        "submit",
+        (e) => {
+            e.preventDefault();
+            const name =
+                elements.name.value.trim();
 
-    if(!email.match(/^[^ ]+@[^ ]+\.[a-z]{2,3}$/)){
-        alert("Please enter a valid email.");
-        return;
-    }
-    alert("Message submitted successfully!");
-    contactForm.reset();
-});
+            const email =
+                elements.email.value.trim();
+
+            const subject =
+                elements.subject.value.trim();
+
+            const message =
+                elements.message.value.trim();
+
+            if(
+                !name ||
+                !email ||
+                !subject ||
+                !message
+            ){
+                notify(
+                    "Please fill all fields.",
+                    "error"
+                );
+                return;
+            }
+            const emailRegex =
+                /^[^ ]+@[^ ]+\.[a-z]{2,3}$/;
+            if(
+                !emailRegex.test(email)
+            ){
+                notify(
+                    "Please enter a valid email.",
+                    "error"
+                );
+                return;
+            }
+            notify(
+                "Message submitted successfully!",
+                "success"
+            );
+            elements.contactForm.reset();
+        }
+    );
+}

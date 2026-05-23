@@ -1,38 +1,32 @@
-console.log("Cart page loaded successfully!");
-const API_BASE = "http://localhost:5000/api";
-
-// API BASE URL & GLOBAL STATE
-const notify = (message, type = "info") => {
-    if (typeof showToast === "function") {
-        showToast(message, type);
-    } else {
-        alert(message);
-    }
-};
-
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-const cartContainer = document.getElementById("cart-items");
-const subtotalElement = document.getElementById("subtotal");
-const taxElement = document.getElementById("tax");
-const totalElement = document.getElementById("total");
+const elements = {
+    cartContainer: document.getElementById("cart-items"),
+    subtotalElement: document.getElementById("subtotal"),
+    taxElement: document.getElementById("tax"),
+    totalElement: document.getElementById("total"),
+    checkoutShipping: document.getElementById("checkout-shipping"),
+    addToCartBtn: document.getElementById("add-to-cart-btn"),
+    buyNowBtn: document.getElementById("buy-now-btn")
+};
 
 // RENDER CART (Backend Integration)
 async function renderCart() {
-    if (!cartContainer) return;
-    cartContainer.innerHTML = "";
+    if (!elements.cartContainer) return;
+    elements.cartContainer.innerHTML = "";
 
     if(cart.length === 0) {
-        cartContainer.innerHTML = `
+        elements.cartContainer.innerHTML = `
             <div class="empty-cart">
                 <h2>Your cart is empty</h2>
                 <p>Add products to continue shopping.</p>
                 <a href="shop.html" class="continue-shopping-btn">Continue Shopping</a>
             </div>
         `;
-        subtotalElement.innerText = "₹0";
-        taxElement.innerText = "₹0";
-        totalElement.innerText = "₹0";
+
+        elements.subtotalElement.innerText = "₹0";
+        elements.taxElement.innerText = "₹0";
+        elements.totalElement.innerText = "₹0";
         return;
     }
 
@@ -59,37 +53,57 @@ async function renderCart() {
             </div>
             <button class="remove-btn" data-index="${index}">Remove</button>
         `;
-        cartContainer.appendChild(cartItem);
+        const moveBtn = document.createElement("button");
+        moveBtn.classList.add("move-wishlist-btn");
+        moveBtn.innerText = "Move to Wishlist";
+        moveBtn.dataset.index = index;
+        moveBtn.addEventListener("click", () => {
+            const wishlist = JSON.parse(localStorage.getItem("wishlist")) || [];
+            const exists = wishlist.find(
+                item =>
+                    item.id === cart[index].id &&
+                    item.color === cart[index].color &&
+                    item.size === cart[index].size
+            );
+
+            if(!exists){
+                wishlist.push(cart[index]);
+            }
+
+            localStorage.setItem("wishlist", JSON.stringify(wishlist));
+
+            cart.splice(index, 1);
+            saveCart();
+            renderCart();
+
+            notify("Moved to wishlist ❤️", "success");
+        });
+        cartItem.querySelector(".cart-item-info").appendChild(moveBtn);
+        elements.cartContainer.appendChild(cartItem);
     });
 
     const tax = subtotal * 0.18;
-    const shippingCost = parseInt(localStorage.getItem("shippingCost") || 0);
+    // CALCULATE SHIPPING
+    let shippingCost = 0;
+    if(subtotal < 999 && subtotal > 0){
+        shippingCost = 49; // flat shipping fee below ₹999
+    }
+    localStorage.setItem("shippingCost", shippingCost);
     const total = subtotal + tax + shippingCost;
 
-    if (subtotalElement) {
-        subtotalElement.innerText =
-            `₹${subtotal}`;
+    if(elements.subtotalElement){
+        elements.subtotalElement.innerText = `₹${subtotal}`;
+    }
+    if(elements.taxElement){
+        elements.taxElement.innerText = `₹${tax.toFixed(2)}`;
     }
     
-    if (taxElement) {
-        taxElement.innerText =
-            `₹${tax.toFixed(2)}`;
+    if(elements.checkoutShipping){
+        elements.checkoutShipping.innerText = shippingCost === 0 ? "Free" : `₹${shippingCost}`;
     }
     
-    const shippingElement =
-        document.getElementById(
-            "checkout-shipping"
-        );
-    
-    if (shippingElement) {
-        shippingElement.innerText =
-            shippingCost === 0
-                ? "Free"
-                : `₹${shippingCost}`;
-    }
-    
-    if (totalElement) {
-        totalElement.innerText =
+    if(elements.totalElement){
+        elements.totalElement.innerText =
             `₹${total.toFixed(2)}`;
     }
 
@@ -145,9 +159,13 @@ async function addToCartFromProduct(product) {
         qty: product.qty || 1
     };
 
-    const existing = cart.find(p => p.id === item.id && p.color === item.color && p.size === item.size);
-    if(existing) existing.qty += item.qty;
-    else cart.push(item);
+    // STANDARDIZED CART DUPLICATE CHECK
+    const existingIndex = cart.findIndex(p => p.id === item.id && p.color === item.color && p.size === item.size);
+    if(existingIndex >= 0){
+        cart[existingIndex].qty += item.qty;
+    } else {
+        cart.push(item);
+    }
 
     saveCart();
     notify("Added to cart 🛍️", "success");
@@ -174,7 +192,7 @@ async function addToCartFromProduct(product) {
     }
 
     // Update cart totals if cart page is open
-    if(document.getElementById("cart-items")){
+    if(elements.cartContainer){
         renderCart();
     }
 }
@@ -207,7 +225,7 @@ async function refreshTokenAndRetry(callback){
 
 // INITIALIZATION
 document.addEventListener("DOMContentLoaded", () => {
-    if (document.getElementById("cart-items")) {
+    if(elements.cartContainer){
         renderCart();
     }
 });
