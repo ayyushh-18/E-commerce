@@ -4,9 +4,7 @@ let cart =
 
 // wishlist storage
 let wishlist =
-    getJSON(
-        "wishlist"
-    ) || [];
+    AppUtils.getWishlist();
 
 // save cart
 function saveCart() {
@@ -24,8 +22,7 @@ function saveCart() {
 
 // save wishlist
 function saveWishlist() {
-    setJSON(
-        "wishlist",
+    AppUtils.saveWishlist(
         wishlist
     );
 }
@@ -34,9 +31,14 @@ function saveWishlist() {
 function addToCart(
     product
 ) {
-    if (!product) {
+    if (
+        !product
+        ||
+        !product.id
+    ) {
         return;
     }
+
     const existing =
         cart.find(
             (item) =>
@@ -44,8 +46,17 @@ function addToCart(
                 === String(product.id)
         );
 
-    if (existing) {
-        existing.qty += 1;
+    if (
+        existing
+    ) {
+        existing.qty =
+            Math.max(
+                1,
+                Number(
+                    existing.qty || 1
+                ) + 1
+            );
+
     } else {
         cart.push({
             ...product,
@@ -54,7 +65,8 @@ function addToCart(
     }
 
     saveCart();
-    notify(
+
+    AppUtils.notify(
         `${product.name} added to cart`,
         "success"
     );
@@ -64,7 +76,11 @@ function addToCart(
 function toggleWishlist(
     product
 ) {
-    if (!product) {
+    if (
+        !product
+        ||
+        !product.id
+    ) {
         return;
     }
 
@@ -75,14 +91,17 @@ function toggleWishlist(
                 === String(product.id)
         );
 
-    if (exists) {
+    if (
+        exists
+    ) {
         wishlist =
             wishlist.filter(
                 (item) =>
                     String(item.id)
                     !== String(product.id)
             );
-        notify(
+
+        AppUtils.notify(
             "Removed from wishlist",
             "info"
         );
@@ -90,7 +109,8 @@ function toggleWishlist(
         wishlist.push(
             product
         );
-        notify(
+
+        AppUtils.notify(
             "Added to wishlist",
             "success"
         );
@@ -130,9 +150,19 @@ document.addEventListener(
             );
 
         // add cart
-        if (addCartBtn) {
+        if (
+            addCartBtn
+        ) {
+            event.preventDefault();
+
             const id =
                 addCartBtn.dataset.id;
+
+            if (
+                !id
+            ) {
+                return;
+            }
 
             const product =
                 getProductById(
@@ -140,7 +170,9 @@ document.addEventListener(
                     window.allProducts || []
                 );
 
-            if (product) {
+            if (
+                product
+            ) {
                 addToCart(
                     product
                 );
@@ -148,9 +180,19 @@ document.addEventListener(
         }
 
         // wishlist
-        if (wishlistBtn) {
+        if (
+            wishlistBtn
+        ) {
+            event.preventDefault();
+
             const id =
                 wishlistBtn.dataset.id;
+
+            if (
+                !id
+            ) {
+                return;
+            }
 
             const product =
                 getProductById(
@@ -158,7 +200,9 @@ document.addEventListener(
                     window.allProducts || []
                 );
 
-            if (product) {
+            if (
+                product
+            ) {
                 toggleWishlist(
                     product
                 );
@@ -166,9 +210,19 @@ document.addEventListener(
         }
 
         // product page
-        if (viewBtn) {
+        if (
+            viewBtn
+        ) {
+            event.preventDefault();
+
             const id =
                 viewBtn.dataset.id;
+
+            if (
+                !id
+            ) {
+                return;
+            }
 
             window.location.href =
                 `product.html?id=${id}`;

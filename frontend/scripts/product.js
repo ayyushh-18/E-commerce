@@ -114,25 +114,38 @@ if (
 ) {
     window.location.href =
         "shop.html";
+
+    throw new Error(
+        "Invalid product ID"
+    );
 }
 
 // FALLBACK PRODUCT
 function getFallbackProduct() {
     return {
         id: 1,
+
         brand:
             "AnthropicBots",
+
         name:
             "Modern Fashion T-Shirt",
+
         category:
             "T-Shirt",
+
         price: 999,
+
         image:
             "assets/images/f1.png",
+
         description:
             "Premium quality cotton t-shirt with breathable fabric and modern fashion styling.",
+
         stock: 12,
+
         rating: 4.5,
+
         discount_percent: 10
     };
 }
@@ -158,6 +171,7 @@ async function fetchProduct() {
             await AppUtils.apiRequest(
                 `/products/${productId}`
             );
+
         if (
             response.success
             &&
@@ -173,7 +187,12 @@ async function fetchProduct() {
                     response.product
                 )
             );
+
         } else {
+            console.warn(
+                "Using fallback product"
+            );
+
             currentProductData =
                 getFallbackProduct();
         }
@@ -184,17 +203,34 @@ async function fetchProduct() {
             error
         );
 
-        const cached =
-            sessionStorage.getItem(
-                `product-${productId}`
+        let cached =
+            null;
+
+        try {
+            cached =
+                sessionStorage.getItem(
+                    `product-${productId}`
+                );
+
+            cached =
+                cached
+                    ? JSON.parse(
+                        cached
+                    )
+                    : null;
+
+        } catch (
+            storageError
+        ) {
+            console.error(
+                "CACHE PARSE ERROR:",
+                storageError
             );
+        }
 
         currentProductData =
-            cached
-                ? JSON.parse(
-                    cached
-                )
-                : getFallbackProduct();
+            cached ||
+            getFallbackProduct();
     }
     initializeProductPage();
     hideLoadingState();
@@ -205,8 +241,36 @@ function initializeProductPage() {
     const product =
         currentProductData;
 
-    if (!product) {
+    if (
+        !product
+    ) {
         return;
+    }
+
+    // disable actions if out of stock
+    if (
+        Number(
+            product.stock
+        ) <= 0
+    ) {
+        if (
+            elements.addToCartBtn
+        ) {
+
+            elements.addToCartBtn.disabled =
+                true;
+
+            elements.addToCartBtn.innerText =
+                "Out of Stock";
+        }
+
+        if (
+            elements.buyNowBtn
+        ) {
+
+            elements.buyNowBtn.disabled =
+                true;
+        }
     }
 
     // render product
@@ -271,9 +335,21 @@ function initializeProductPage() {
 
 // IMAGE ZOOM
 function initializeImageZoom() {
-    if (!elements.mainImage) {
+    if (
+        !elements.mainImage
+    ) {
         return;
     }
+
+    // avoid duplicate listeners
+    if (
+        elements.mainImage.dataset.zoomReady
+    ) {
+        return;
+    }
+
+    elements.mainImage.dataset.zoomReady =
+        "true";
 
     elements.mainImage.style.transition =
         "0.3s ease";
@@ -318,7 +394,6 @@ document.addEventListener(
             elements.plusBtn
         ) {
             elements.plusBtn.click();
-
         }
 
         if (

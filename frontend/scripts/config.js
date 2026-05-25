@@ -13,7 +13,7 @@ const CONFIG = {
     API_BASE:
         isLocalhost
             ? "http://localhost:5000/api"
-            : "https://your-backend-domain.com/api",
+            : "http://localhost:5000/api",
 
     // app info
     APP_NAME:
@@ -70,12 +70,16 @@ window.CONFIG =
     CONFIG;
 
 // debug info
-console.log(
-    `%c${CONFIG.APP_NAME} v${CONFIG.APP_VERSION}`,
-    "color:#088178;font-weight:bold;"
-);
+if (
+    isLocalhost
+) {
+    console.log(
+        `%c${CONFIG.APP_NAME} v${CONFIG.APP_VERSION}`,
+        "color:#088178;font-weight:bold;"
+    );
 
-console.log(
-    "API BASE:",
-    CONFIG.API_BASE
-);
+    console.log(
+        "API BASE:",
+        CONFIG.API_BASE
+    );
+}

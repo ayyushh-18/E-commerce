@@ -28,9 +28,37 @@ const closeCartBtn =
 let drawerCart =
     AppUtils.getCart();
 
+// safe helpers
+function safePrice(
+    value
+) {
+    const parsed =
+        parseFloat(value);
+
+    return isNaN(parsed)
+        ? 0
+        : parsed;
+}
+
+function safeQty(
+    value
+) {
+    const parsed =
+        parseInt(value);
+
+    return isNaN(parsed)
+        ? 1
+        : Math.max(
+            1,
+            parsed
+        );
+}
+
 // open drawer
 function openCartDrawer() {
-    if (!cartDrawer) {
+    if (
+        !cartDrawer
+    ) {
         return;
     }
 
@@ -38,24 +66,33 @@ function openCartDrawer() {
         "active"
     );
 
+    document.body.style.overflow =
+        "hidden";
+
     renderCartDrawer();
 }
 
 // close drawer
 function closeCartDrawer() {
-    if (!cartDrawer) {
+    if (
+        !cartDrawer
+    ) {
         return;
     }
 
     cartDrawer.classList.remove(
         "active"
     );
+
+    document.body.style.overflow =
+        "";
 }
 
 // render cart drawer
 function renderCartDrawer() {
     if (
-        !cartDrawerItems ||
+        !cartDrawerItems
+        ||
         !cartDrawerTotal
     ) {
         return;
@@ -64,22 +101,35 @@ function renderCartDrawer() {
     drawerCart =
         AppUtils.getCart();
 
-    if (!drawerCart.length) {
-        cartDrawerItems.innerHTML = `
-            <p>
-                Your cart is empty
-            </p>
-        `;
+    if (
+        !drawerCart.length
+    ) {
+
+        cartDrawerItems.innerHTML =
+            `
+                <p class="empty-cart">
+                    Your cart is empty
+                </p>
+            `;
 
         cartDrawerTotal.innerHTML =
             formatPrice(0);
-
         return;
     }
 
     cartDrawerItems.innerHTML =
         drawerCart.map(
             (item) => {
+                const qty =
+                    safeQty(
+                        item.qty
+                    );
+
+                const price =
+                    safePrice(
+                        item.price
+                    );
+
                 return `
                     <div class="drawer-item">
                         <img
@@ -89,38 +139,39 @@ function renderCartDrawer() {
                                 )
                             }"
                             alt="${
-                                item.name
+                                item.name || "Product"
                             }"
+                            loading="lazy"
                         >
 
                         <div class="drawer-item-info">
                             <h4>
                                 ${
-                                    item.name
+                                    item.name || "Product"
                                 }
                             </h4>
 
                             <p>
                                 ${
                                     formatPrice(
-                                        item.price
+                                        price
                                     )
                                 }
                             </p>
 
                             <small>
                                 Qty:
-                                ${
-                                    item.qty
-                                }
+                                ${qty}
                             </small>
                         </div>
 
                         <button
+                            type="button"
                             class="remove-drawer-item"
                             data-id="${
                                 item.id
                             }"
+                            aria-label="Remove item"
                         >
                             ✕
                         </button>
@@ -131,25 +182,41 @@ function renderCartDrawer() {
 
     const total =
         drawerCart.reduce(
-            (sum, item) => {
+            (
+                sum,
+                item
+            ) => {
                 return (
                     sum +
                     (
-                        item.price *
-                        item.qty
+                        safePrice(
+                            item.price
+                        ) *
+                        safeQty(
+                            item.qty
+                        )
                     )
                 );
             },
             0
         );
+
     cartDrawerTotal.innerHTML =
-        formatPrice(total);
+        formatPrice(
+            total
+        );
 }
 
 // remove item
 function removeDrawerItem(
     id
 ) {
+    if (
+        !id
+    ) {
+        return;
+    }
+
     drawerCart =
         drawerCart.filter(
             (item) =>
@@ -162,6 +229,7 @@ function removeDrawerItem(
     );
 
     renderCartDrawer();
+
     if (
         typeof updateCartCount ===
         "function"
@@ -169,37 +237,93 @@ function removeDrawerItem(
         updateCartCount();
     }
 
-    notify(
+    AppUtils.notify(
         "Item removed from cart",
         "info"
     );
 }
 
-// event listeners
-if (openCartBtn) {
+// open cart
+if (
+    openCartBtn
+) {
     openCartBtn.addEventListener(
         "click",
-        openCartDrawer
+        (
+            event
+        ) => {
+            event.preventDefault();
+            openCartDrawer();
+        }
     );
 }
 
-if (closeCartBtn) {
+// close cart
+if (
+    closeCartBtn
+) {
     closeCartBtn.addEventListener(
         "click",
-        closeCartDrawer
+        (
+            event
+        ) => {
+            event.preventDefault();
+            closeCartDrawer();
+        }
     );
 }
+
+// escape close
+document.addEventListener(
+    "keydown",
+    (
+        event
+    ) => {
+
+        if (
+            event.key ===
+            "Escape"
+        ) {
+            closeCartDrawer();
+        }
+    }
+);
+
+// outside click close
+document.addEventListener(
+    "click",
+    (
+        event
+    ) => {
+        if (
+            cartDrawer
+            &&
+            cartDrawer.classList.contains(
+                "active"
+            )
+            &&
+            event.target === cartDrawer
+        ) {
+            closeCartDrawer();
+        }
+    }
+);
 
 // drawer delegation
 document.addEventListener(
     "click",
-    (event) => {
+    (
+        event
+    ) => {
         const removeBtn =
             event.target.closest(
                 ".remove-drawer-item"
             );
 
-        if (removeBtn) {
+        if (
+            removeBtn
+        ) {
+            event.preventDefault();
             removeDrawerItem(
                 removeBtn.dataset.id
             );

@@ -40,6 +40,55 @@ function saveCart() {
     AppUtils.saveCart(
         cart
     );
+
+    if (
+        typeof updateCartCount ===
+        "function"
+    ) {
+
+        updateCartCount();
+    }
+
+    if (
+        typeof renderCartDrawer ===
+        "function"
+    ) {
+
+        renderCartDrawer();
+    }
+}
+
+// SAFE HELPERS
+function safePrice(
+    value
+) {
+
+    const parsed =
+        parseFloat(
+            value
+        );
+
+    return isNaN(parsed)
+        ? 0
+        : parsed;
+}
+
+function safeQty(
+    value
+) {
+
+    const parsed =
+        parseInt(
+            value,
+            10
+        );
+
+    return isNaN(parsed)
+        ? 1
+        : Math.max(
+            1,
+            parsed
+        );
 }
 
 // EMPTY CART
@@ -49,15 +98,18 @@ function renderEmptyCart() {
     ) {
         return;
     }
+
     elements.cartContainer.innerHTML =
         `
             <div class="empty-cart">
                 <h2>
                     Your cart is empty
                 </h2>
+
                 <p>
                     Add products to continue shopping.
                 </p>
+
                 <a
                     href="shop.html"
                     class="continue-shopping-btn"
@@ -77,13 +129,16 @@ function updateCartTotals(
     subtotal
 ) {
     const safeSubtotal =
-        Number(subtotal) || 0;
+        safePrice(
+            subtotal
+        );
 
     const tax =
         safeSubtotal * 0.18;
 
     const shipping =
-        safeSubtotal > 0 &&
+        safeSubtotal > 0
+        &&
         safeSubtotal < 999
             ? 49
             : 0;
@@ -144,12 +199,20 @@ function renderCart() {
     ) {
         return;
     }
+
+    cart =
+        AppUtils.getCart();
+
     if (
-        !Array.isArray(cart)
+        !Array.isArray(
+            cart
+        )
         ||
-        cart.length === 0
+        !cart.length
     ) {
+
         renderEmptyCart();
+
         return;
     }
 
@@ -159,19 +222,24 @@ function renderCart() {
     const fragment =
         document.createDocumentFragment();
 
-    let subtotal = 0;
+    let subtotal =
+        0;
+
     cart.forEach(
-        (item, index) => {
+        (
+            item,
+            index
+        ) => {
+
             const price =
-                parseFloat(
+                safePrice(
                     item.price
-                ) || 0;
+                );
 
             const qty =
-                parseInt(
-                    item.qty,
-                    10
-                ) || 1;
+                safeQty(
+                    item.qty
+                );
 
             subtotal +=
                 price * qty;
@@ -188,18 +256,34 @@ function renderCart() {
             cartItem.innerHTML =
                 `
                     <img
-                        src="${AppUtils.defaultImage(item.img || item.image)}"
-                        alt="${item.name}"
+                        src="${
+                            AppUtils.defaultImage(
+                                item.img || item.image
+                            )
+                        }"
+                        alt="${
+                            item.name || "Product"
+                        }"
                         loading="lazy"
                     >
+
                     <div class="cart-item-info">
+
                         <h3>
-                            ${item.name}
+                            ${
+                                item.name || "Product"
+                            }
                         </h3>
+
                         <p>
                             Price:
-                            ${AppUtils.formatPrice(price)}
+                            ${
+                                AppUtils.formatPrice(
+                                    price
+                                )
+                            }
                         </p>
+
                         ${
                             item.color
                                 ? `
@@ -210,6 +294,7 @@ function renderCart() {
                                 `
                                 : ""
                         }
+
                         ${
                             item.size
                                 ? `
@@ -222,28 +307,36 @@ function renderCart() {
                         }
 
                         <div class="cart-qty-controls">
+
                             <button
+                                type="button"
                                 data-index="${index}"
                                 class="decrease-qty"
                                 aria-label="Decrease quantity"
                             >
                                 -
                             </button>
+
                             <span>
                                 ${qty}
                             </span>
+
                             <button
+                                type="button"
                                 data-index="${index}"
                                 class="increase-qty"
                                 aria-label="Increase quantity"
                             >
                                 +
                             </button>
+
                         </div>
                     </div>
 
                     <div class="cart-item-actions">
+
                         <button
+                            type="button"
                             class="move-wishlist-btn"
                             data-index="${index}"
                         >
@@ -251,11 +344,13 @@ function renderCart() {
                         </button>
 
                         <button
+                            type="button"
                             class="remove-btn"
                             data-index="${index}"
                         >
                             Remove
                         </button>
+
                     </div>
                 `;
 
@@ -272,174 +367,201 @@ function renderCart() {
     updateCartTotals(
         subtotal
     );
-    attachCartEventListeners();
 }
 
-// CART EVENTS
-function attachCartEventListeners() {
-    // increase qty
-    document
-        .querySelectorAll(
-            ".increase-qty"
-        )
-        .forEach((btn) => {
-            btn.addEventListener(
-                "click",
-                (event) => {
-                    const index =
-                        parseInt(
-                            event.target.dataset.index,
-                            10
-                        );
+// CART EVENT DELEGATION
+document.addEventListener(
+    "click",
+    async (
+        event
+    ) => {
 
-                    if (
-                        !cart[index]
-                    ) {
-                        return;
-                    }
-                    cart[index].qty += 1;
-                    saveCart();
-                    renderCart();
-                }
+        // increase qty
+        const increaseBtn =
+            event.target.closest(
+                ".increase-qty"
             );
-        });
 
-    // decrease qty
-    document
-        .querySelectorAll(
-            ".decrease-qty"
-        )
-        .forEach((btn) => {
-            btn.addEventListener(
-                "click",
-                (event) => {
-                    const index =
-                        parseInt(
-                            event.target.dataset.index,
-                            10
-                        );
+        if (
+            increaseBtn
+        ) {
 
-                    if (
-                        !cart[index]
-                    ) {
-                        return;
-                    }
+            const index =
+                parseInt(
+                    increaseBtn.dataset.index,
+                    10
+                );
 
-                    if (
-                        cart[index].qty > 1
-                    ) {
-                        cart[index].qty -= 1;
+            if (
+                !cart[index]
+            ) {
+                return;
+            }
 
-                    } else {
-                        cart.splice(
-                            index,
-                            1
-                        );
-                    }
-                    saveCart();
-                    renderCart();
-                }
+            cart[index].qty =
+                safeQty(
+                    cart[index].qty
+                ) + 1;
+
+            saveCart();
+
+            renderCart();
+
+            return;
+        }
+
+        // decrease qty
+        const decreaseBtn =
+            event.target.closest(
+                ".decrease-qty"
             );
-        });
 
-    // remove item
-    document
-        .querySelectorAll(
-            ".remove-btn"
-        )
-        .forEach((btn) => {
-            btn.addEventListener(
-                "click",
-                (event) => {
-                    const index =
-                        parseInt(
-                            event.target.dataset.index,
-                            10
-                        );
+        if (
+            decreaseBtn
+        ) {
 
-                    if (
-                        !cart[index]
-                    ) {
-                        return;
-                    }
+            const index =
+                parseInt(
+                    decreaseBtn.dataset.index,
+                    10
+                );
 
-                    cart.splice(
-                        index,
-                        1
-                    );
-                    saveCart();
-                    renderCart();
-                    AppUtils.notify(
-                        "Item removed 🗑️",
-                        "success"
-                    );
-                }
+            if (
+                !cart[index]
+            ) {
+                return;
+            }
+
+            if (
+                safeQty(
+                    cart[index].qty
+                ) > 1
+            ) {
+
+                cart[index].qty -= 1;
+
+            } else {
+
+                cart.splice(
+                    index,
+                    1
+                );
+            }
+
+            saveCart();
+
+            renderCart();
+
+            return;
+        }
+
+        // remove item
+        const removeBtn =
+            event.target.closest(
+                ".remove-btn"
             );
-        });
 
-    // move to wishlist
-    document
-        .querySelectorAll(
-            ".move-wishlist-btn"
-        )
-        .forEach((btn) => {
-            btn.addEventListener(
-                "click",
-                (event) => {
-                    const index =
-                        parseInt(
-                            event.target.dataset.index,
-                            10
-                        );
+        if (
+            removeBtn
+        ) {
 
-                    if (
-                        !cart[index]
-                    ) {
-                        return;
-                    }
+            const index =
+                parseInt(
+                    removeBtn.dataset.index,
+                    10
+                );
 
-                    const wishlist =
-                        AppUtils.getWishlist();
+            if (
+                !cart[index]
+            ) {
+                return;
+            }
 
-                    const exists =
-                        wishlist.find(
-                            (item) =>
-                                item.id ===
-                                cart[index].id
-                                &&
-                                item.color ===
-                                cart[index].color
-                                &&
-                                item.size ===
-                                cart[index].size
-                        );
-
-                    if (
-                        !exists
-                    ) {
-                        wishlist.push(
-                            cart[index]
-                        );
-                    }
-
-                    AppUtils.saveWishlist(
-                        wishlist
-                    );
-
-                    cart.splice(
-                        index,
-                        1
-                    );
-                    saveCart();
-                    renderCart();
-                    AppUtils.notify(
-                        "Moved to wishlist ❤️",
-                        "success"
-                    );
-                }
+            cart.splice(
+                index,
+                1
             );
-        });
-}
+
+            saveCart();
+
+            renderCart();
+
+            AppUtils.notify(
+                "Item removed 🗑️",
+                "success"
+            );
+
+            return;
+        }
+
+        // move wishlist
+        const wishlistBtn =
+            event.target.closest(
+                ".move-wishlist-btn"
+            );
+
+        if (
+            wishlistBtn
+        ) {
+
+            const index =
+                parseInt(
+                    wishlistBtn.dataset.index,
+                    10
+                );
+
+            if (
+                !cart[index]
+            ) {
+                return;
+            }
+
+            const wishlist =
+                AppUtils.getWishlist();
+
+            const exists =
+                wishlist.find(
+                    (item) =>
+
+                        item.id ===
+                        cart[index].id
+                        &&
+                        item.color ===
+                        cart[index].color
+                        &&
+                        item.size ===
+                        cart[index].size
+                );
+
+            if (
+                !exists
+            ) {
+
+                wishlist.push(
+                    cart[index]
+                );
+            }
+
+            AppUtils.saveWishlist(
+                wishlist
+            );
+
+            cart.splice(
+                index,
+                1
+            );
+
+            saveCart();
+
+            renderCart();
+
+            AppUtils.notify(
+                "Moved to wishlist ❤️",
+                "success"
+            );
+        }
+    }
+);
 
 // ADD TO CART
 async function addToCartFromProduct(
@@ -448,24 +570,29 @@ async function addToCartFromProduct(
     const item = {
         id:
             product.id,
+
         name:
             product.name,
+
         price:
-            parseFloat(
+            safePrice(
                 product.price
-            ) || 0,
+            ),
+
         img:
             product.img ||
             product.image,
+
         color:
             product.color || null,
+
         size:
             product.size || null,
+
         qty:
-            parseInt(
-                product.qty,
-                10
-            ) || 1
+            safeQty(
+                product.qty
+            )
     };
 
     // duplicate check
@@ -485,6 +612,7 @@ async function addToCartFromProduct(
         cart[
             existingIndex
         ].qty += item.qty;
+
     } else {
         cart.push(
             item
@@ -524,7 +652,11 @@ async function addToCartFromProduct(
                     "Backend cart sync failed"
                 );
             }
-        } catch (error) {
+
+        } catch (
+            error
+        ) {
+
             console.error(
                 "BACKEND CART ERROR:",
                 error
@@ -555,6 +687,7 @@ if (
                 );
                 return;
             }
+
             window.location.href =
                 "checkout.html";
         }

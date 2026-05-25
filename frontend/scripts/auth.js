@@ -55,8 +55,9 @@ const elements = {
 const emailRegex =
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// synced with backend validation
 const passwordRegex =
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
 
 // auth api
 async function signupUser(
@@ -154,9 +155,11 @@ function saveAuthSession(
 // clear auth
 function clearAuthSession() {
     AppUtils.clearAuthData();
+
     localStorage.removeItem(
         "cart"
     );
+
     localStorage.removeItem(
         "wishlist"
     );
@@ -170,6 +173,7 @@ if (
         "submit",
         async (event) => {
             event.preventDefault();
+
             const submitBtn =
                 elements.signupForm.querySelector(
                     'button[type="submit"]'
@@ -180,12 +184,16 @@ if (
             ) {
                 return;
             }
+
             const name =
                 elements.signupName.value.trim();
+
             const email =
                 elements.signupEmail.value.trim();
+
             const password =
                 elements.signupPassword.value;
+
             if (
                 !name
             ) {
@@ -193,6 +201,7 @@ if (
                     "Name is required.",
                     "error"
                 );
+
                 return;
             }
 
@@ -203,6 +212,7 @@ if (
                     "Enter a valid email.",
                     "error"
                 );
+
                 return;
             }
 
@@ -210,9 +220,10 @@ if (
                 !passwordRegex.test(password)
             ) {
                 AppUtils.notify(
-                    "Password must contain uppercase, lowercase, number and 8 characters.",
+                    "Password must contain uppercase, lowercase, number, special character and 8 characters.",
                     "error"
                 );
+
                 return;
             }
 
@@ -243,6 +254,7 @@ if (
                             "signin.html";
 
                     }, 1000);
+
                 } else {
                     AppUtils.notify(
                         response.message ||
@@ -250,6 +262,7 @@ if (
                         "error"
                     );
                 }
+
             } catch (error) {
                 console.error(
                     "SIGNUP ERROR:",
@@ -260,6 +273,7 @@ if (
                     "Signup failed. Please try again.",
                     "error"
                 );
+
             } finally {
                 toggleFormLoading(
                     submitBtn,
@@ -278,6 +292,7 @@ if (
         "submit",
         async (event) => {
             event.preventDefault();
+
             const submitBtn =
                 elements.signinForm.querySelector(
                     'button[type="submit"]'
@@ -288,11 +303,13 @@ if (
             ) {
                 return;
             }
+
             const email =
                 elements.signinEmail.value.trim();
 
+            // do not trim password
             const password =
-                elements.signinPassword.value.trim();
+                elements.signinPassword.value;
 
             if (
                 !emailRegex.test(email)
@@ -301,6 +318,7 @@ if (
                     "Enter a valid email.",
                     "error"
                 );
+
                 return;
             }
 
@@ -311,6 +329,7 @@ if (
                     "Password is required.",
                     "error"
                 );
+
                 return;
             }
 
@@ -348,6 +367,7 @@ if (
                         window.location.href =
                             redirect;
                     }, 1000);
+
                 } else {
                     AppUtils.notify(
                         response.message ||
@@ -355,15 +375,18 @@ if (
                         "error"
                     );
                 }
+
             } catch (error) {
                 console.error(
                     "LOGIN ERROR:",
                     error
                 );
+
                 AppUtils.notify(
                     "Login failed. Please try again.",
                     "error"
                 );
+
             } finally {
                 toggleFormLoading(
                     submitBtn,
@@ -386,6 +409,7 @@ if (
     ) {
         elements.authLink.innerHTML =
             `<i class="fas fa-user"></i>`;
+
         elements.authLink.href =
             "#";
 
@@ -398,6 +422,7 @@ if (
             "click",
             (event) => {
                 event.preventDefault();
+
                 elements.dropdown?.classList.toggle(
                     "active"
                 );
@@ -409,6 +434,7 @@ if (
             "click",
             () => {
                 clearAuthSession();
+
                 elements.dropdown?.classList.remove(
                     "active"
                 );
@@ -454,14 +480,18 @@ if (
                 }
             }
         );
+
     } else {
         elements.authLink.innerHTML =
             "Sign In";
+
         elements.authLink.href =
             "signin.html";
+
         elements.authLink.classList.remove(
             "profile-active"
         );
+
         elements.dropdown?.classList.remove(
             "active"
         );

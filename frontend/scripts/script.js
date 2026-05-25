@@ -1,7 +1,23 @@
-// GLOBAL STATE
+// global state
 let allProducts = [];
 
-// FETCH PRODUCTS
+// containers
+const featuredContainer =
+    document.getElementById(
+        "featured-products"
+    );
+
+const adminFeaturedContainer =
+    document.getElementById(
+        "featured-products-container"
+    );
+
+const arrivalsContainer =
+    document.getElementById(
+        "new-arrivals-container"
+    );
+
+// fetch products
 async function fetchAllProducts() {
     try {
         const data =
@@ -9,7 +25,9 @@ async function fetchAllProducts() {
                 "/products"
             );
 
-        if (data.success) {
+        if (
+            data.success
+        ) {
             allProducts =
                 Array.isArray(
                     data.products
@@ -20,51 +38,112 @@ async function fetchAllProducts() {
             window.allProducts =
                 allProducts;
 
-            renderProducts(
-                allProducts
-            );
+            renderHomepageProducts();
         }
+
     } catch (error) {
         console.error(
             "PRODUCT FETCH ERROR:",
             error
         );
-        renderProducts([]);
+        renderEmptyState();
     }
 }
 
 fetchAllProducts();
 
-// RENDER PRODUCTS
+// render homepage products
+function renderHomepageProducts() {
+
+    if (
+        !allProducts.length
+    ) {
+        renderEmptyState();
+        return;
+    }
+
+    // featured
+    if (
+        featuredContainer
+    ) {
+        renderProducts(
+            featuredContainer,
+            allProducts.slice(0, 8)
+        );
+    }
+
+    // admin featured
+    if (
+        adminFeaturedContainer
+    ) {
+        const featuredOnly =
+            allProducts.filter(
+                (product) =>
+                    product.featured
+            );
+
+        renderProducts(
+            adminFeaturedContainer,
+            featuredOnly.slice(0, 8)
+        );
+    }
+
+    // new arrivals
+    if (
+        arrivalsContainer
+    ) {
+        renderProducts(
+            arrivalsContainer,
+            [...allProducts]
+                .reverse()
+                .slice(0, 8)
+        );
+    }
+}
+
+// empty state
+function renderEmptyState() {
+    const containers = [
+        featuredContainer,
+        adminFeaturedContainer,
+        arrivalsContainer
+    ];
+
+    containers.forEach(
+        (container) => {
+            if (
+                container
+            ) {
+                container.innerHTML = `
+                    <p class="empty-products">
+                        No products available.
+                    </p>
+                `;
+            }
+        }
+    );
+}
+
+// render products
 function renderProducts(
+    container,
     products = []
 ) {
-    const container =
-        document.getElementById(
-            "products-container"
-        );
-
-    if (!container) {
+    if (
+        !container
+    ) {
         return;
     }
 
-    // empty state
-    if (!products.length) {
-        container.innerHTML = `
-            <p class="empty-products">
-                No products available.
-            </p>
-        `;
-        return;
-    }
-
-    container.innerHTML = "";
+    container.innerHTML =
+        "";
 
     const fragment =
         document.createDocumentFragment();
 
     products.forEach(
         (product, index) => {
+
             const card =
                 document.createElement(
                     "div"
@@ -78,27 +157,31 @@ function renderProducts(
             const productElement =
                 card.firstElementChild;
 
-            if (productElement) {
+            if (
+                productElement
+            ) {
+
                 fragment.appendChild(
                     productElement
                 );
             }
         }
     );
+
     container.appendChild(
         fragment
     );
     initializeProductCardFeatures();
 }
 
-// PRODUCT CARD FEATURES
+// product card features
 function initializeProductCardFeatures() {
     const productCards =
         document.querySelectorAll(
             ".pro"
         );
 
-    // QUICK VIEW MODAL
+    // quick view modal
     productCards.forEach(
         (card) => {
             const img =
@@ -106,7 +189,9 @@ function initializeProductCardFeatures() {
                     "img"
                 );
 
-            if (!img) {
+            if (
+                !img
+            ) {
                 return;
             }
 
@@ -162,7 +247,8 @@ function initializeProductCardFeatures() {
                         img.src;
 
                     big.alt =
-                        img.alt || "Product Image";
+                        img.alt ||
+                        "Product Image";
 
                     big.style.cssText = `
                         width: 100%;
@@ -181,6 +267,7 @@ function initializeProductCardFeatures() {
                     document.body.appendChild(
                         modal
                     );
+
                     document.body.style.overflow =
                         "hidden";
 
@@ -189,6 +276,7 @@ function initializeProductCardFeatures() {
                             "";
 
                         modal.remove();
+
                         document.removeEventListener(
                             "keydown",
                             handleEscape
@@ -216,6 +304,7 @@ function initializeProductCardFeatures() {
                             }
                         }
                     );
+
                     document.addEventListener(
                         "keydown",
                         handleEscape
@@ -224,226 +313,4 @@ function initializeProductCardFeatures() {
             );
         }
     );
-
-    // SCROLL ANIMATION
-    const observer =
-        new IntersectionObserver(
-            (entries) => {
-                entries.forEach(
-                    (entry) => {
-                        if (
-                            entry.isIntersecting
-                        ) {
-                            entry.target.style.transform =
-                                "translateY(0)";
-
-                            entry.target.style.opacity =
-                                "1";
-
-                        }
-                    }
-                );
-            },
-            {
-                threshold: 0.1
-            }
-        );
-
-    document
-        .querySelectorAll(
-            ".pro, .fe-box, .banner-box"
-        )
-        .forEach((element) => {
-            element.style.transform =
-                "translateY(40px)";
-
-            element.style.opacity =
-                "0";
-
-            element.style.transition =
-                "0.6s ease";
-
-            observer.observe(
-                element
-            );
-
-            element.addEventListener(
-                "transitionend",
-                () => {
-
-                    observer.unobserve(
-                        element
-                    );
-
-                },
-                {
-                    once: true
-                }
-            );
-        });
-
-    // RECENTLY VIEWED
-    let viewed =
-        AppUtils.getJSON(
-            "viewed",
-            []
-        );
-
-    productCards.forEach(
-        (card) => {
-            card.addEventListener(
-                "click",
-                () => {
-                    const product = {
-                        name:
-                            card.querySelector(
-                                "h5"
-                            )?.innerText,
-
-                        image:
-                            card.querySelector(
-                                "img"
-                            )?.src,
-
-                        brand:
-                            card.querySelector(
-                                ".des span"
-                            )?.innerText,
-
-                        price:
-                            card.querySelector(
-                                "h4"
-                            )?.innerText
-
-                    };
-
-                    viewed.unshift(
-                        product
-                    );
-
-                    viewed = [
-                        ...new Map(
-                            viewed.map(
-                                (p) => [
-                                    p.image ||
-                                    p.name,
-                                    p
-                                ]
-                            )
-                        ).values()
-                    ].slice(0, 5);
-
-                    AppUtils.setJSON(
-                        "viewed",
-                        viewed
-                    );
-                }
-            );
-        }
-    );
-
-    // DELIVERY DATE
-    function deliveryDate() {
-        const date =
-            new Date();
-
-        date.setDate(
-            date.getDate() +
-            Math.floor(
-                Math.random() * 5 + 3
-            )
-        );
-        return date.toDateString();
-    }
-
-    productCards.forEach(
-        (card) => {
-            const delivery =
-                document.createElement(
-                    "p"
-                );
-
-            delivery.style.fontSize =
-                "11px";
-
-            delivery.style.color =
-                "#666";
-
-            delivery.innerText =
-                "Delivery by: " +
-                deliveryDate();
-
-            card.appendChild(
-                delivery
-            );
-        }
-    );
-
-    // PRODUCT LABELS
-    productCards.forEach(
-        (card, index) => {
-            if (index < 2) {
-                const tag =
-                    document.createElement(
-                        "span"
-                    );
-
-                tag.innerText =
-                    "NEW";
-
-                tag.style.cssText = `
-                    position: absolute;
-                    top: 10px;
-                    right: 10px;
-                    background: red;
-                    color: white;
-                    padding: 3px 6px;
-                    font-size: 10px;
-                    border-radius: 4px;
-                    z-index: 2;
-                `;
-
-                card.appendChild(
-                    tag
-                );
-            }
-        }
-    );
-
-    // IMAGE HOVER
-    productCards.forEach(
-        (card) => {
-            const img =
-                card.querySelector(
-                    "img"
-                );
-
-            if (!img) {
-                return;
-            }
-
-            img.style.transition =
-                "0.3s ease";
-
-            img.addEventListener(
-                "mouseenter",
-                () => {
-
-                    img.style.transform =
-                        "scale(1.05)";
-                }
-            );
-
-            img.addEventListener(
-                "mouseleave",
-                () => {
-                    img.style.transform =
-                        "scale(1)";
-
-                }
-            );
-
-        }
-    );
-
 }

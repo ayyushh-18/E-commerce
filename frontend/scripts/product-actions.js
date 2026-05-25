@@ -12,25 +12,91 @@ function setCurrentProduct(
 
 // get quantity
 function getSelectedQuantity() {
+    const qtyInput =
+        document.getElementById(
+            "product-qty"
+        );
+
     if (
-        !window.qtyInput
+        !qtyInput
     ) {
         return 1;
     }
-    return (
+
+    const qty =
         parseInt(
-            window.qtyInput.value
-        ) || 1
-    );
+            qtyInput.value,
+            10
+        );
+
+    return isNaN(qty)
+        ? 1
+        : Math.max(
+            1,
+            qty
+        );
+}
+
+// validate stock
+function validateStock(
+    qty
+) {
+    if (
+        !currentProduct
+    ) {
+        return false;
+    }
+
+    const stock =
+        parseInt(
+            currentProduct.stock,
+            10
+        ) || 0;
+
+    if (
+        stock <= 0
+    ) {
+
+        AppUtils.notify(
+            "Product out of stock",
+            "error"
+        );
+
+        return false;
+    }
+
+    if (
+        qty > stock
+    ) {
+        AppUtils.notify(
+            `Only ${stock} item(s) available`,
+            "error"
+        );
+        return false;
+    }
+    return true;
 }
 
 // build cart product
 function buildCartProduct() {
+
     if (
         !currentProduct
     ) {
         return null;
     }
+
+    const qty =
+        getSelectedQuantity();
+
+    if (
+        !validateStock(
+            qty
+        )
+    ) {
+        return null;
+    }
+
     return {
         id:
             currentProduct.id,
@@ -39,7 +105,9 @@ function buildCartProduct() {
             currentProduct.name,
 
         price:
-            currentProduct.price,
+            parseFloat(
+                currentProduct.price
+            ) || 0,
 
         image:
             currentProduct.image,
@@ -47,8 +115,7 @@ function buildCartProduct() {
         brand:
             currentProduct.brand,
 
-        qty:
-            getSelectedQuantity(),
+        qty,
 
         color:
             window.selectedColor
@@ -65,8 +132,11 @@ function addProductToCart() {
     const product =
         buildCartProduct();
 
-    if (!product) {
-        notify(
+    if (
+        !product
+    ) {
+
+        AppUtils.notify(
             "Product unavailable",
             "error"
         );
@@ -95,9 +165,23 @@ function addProductToCart() {
             }
         );
 
-    if (existing) {
-        existing.qty +=
+    if (
+        existing
+    ) {
+        const updatedQty =
+            existing.qty +
             product.qty;
+
+        if (
+            !validateStock(
+                updatedQty
+            )
+        ) {
+            return;
+        }
+
+        existing.qty =
+            updatedQty;
 
     } else {
         cart.push(
@@ -116,7 +200,15 @@ function addProductToCart() {
         updateCartCount();
     }
 
-    notify(
+    if (
+        typeof renderCartDrawer ===
+        "function"
+    ) {
+
+        renderCartDrawer();
+    }
+
+    AppUtils.notify(
         "Added to cart",
         "success"
     );
@@ -143,10 +235,7 @@ function toggleProductWishlist() {
     }
 
     let wishlist =
-        AppUtils.getJSON(
-            "wishlist",
-            []
-        );
+        AppUtils.getWishlist();
 
     const exists =
         wishlist.some(
@@ -158,20 +247,25 @@ function toggleProductWishlist() {
                 )
         );
 
-    if (exists) {
+    if (
+        exists
+    ) {
         wishlist =
             wishlist.filter(
                 (item) =>
+
                     String(item.id)
                     !==
                     String(
                         currentProduct.id
                     )
             );
-        notify(
+
+        AppUtils.notify(
             "Removed from wishlist",
             "info"
         );
+
     } else {
         wishlist.push({
             id:
@@ -190,45 +284,83 @@ function toggleProductWishlist() {
                 currentProduct.brand
         });
 
-        notify(
+        AppUtils.notify(
             "Added to wishlist",
             "success"
         );
     }
 
-    AppUtils.setJSON(
-        "wishlist",
+    AppUtils.saveWishlist(
         wishlist
     );
 }
 
 // action bindings
-if (
-    window.addToCartBtn
-) {
-    window.addToCartBtn.addEventListener(
-        "click",
-        addProductToCart
-    );
-}
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+        const addToCartBtn =
+            document.getElementById(
+                "add-to-cart-btn"
+            );
 
-if (
-    window.buyNowBtn
-) {
-    window.buyNowBtn.addEventListener(
-        "click",
-        buyNow
-    );
-}
+        const buyNowBtn =
+            document.getElementById(
+                "buy-now-btn"
+            );
 
-if (
-    window.wishlistBtn
-) {
-    window.wishlistBtn.addEventListener(
-        "click",
-        toggleProductWishlist
-    );
-}
+        const wishlistBtn =
+            document.getElementById(
+                "wishlist-btn"
+            );
+
+        if (
+            addToCartBtn
+        ) {
+            addToCartBtn.addEventListener(
+                "click",
+                (
+                    event
+                ) => {
+                    event.preventDefault();
+                    addProductToCart();
+                }
+            );
+        }
+
+        if (
+            buyNowBtn
+        ) {
+            buyNowBtn.addEventListener(
+                "click",
+                (
+                    event
+                ) => {
+                    event.preventDefault();
+
+                    buyNow();
+                }
+            );
+        }
+
+        if (
+            wishlistBtn
+        ) {
+
+            wishlistBtn.addEventListener(
+                "click",
+                (
+                    event
+                ) => {
+
+                    event.preventDefault();
+
+                    toggleProductWishlist();
+                }
+            );
+        }
+    }
+);
 
 // expose globally
 window.setCurrentProduct =

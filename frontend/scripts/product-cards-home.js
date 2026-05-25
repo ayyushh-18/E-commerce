@@ -7,16 +7,43 @@ const featuredContainer =
 // new arrivals container
 const arrivalsContainer =
     document.getElementById(
-        "new-arrivals-products"
+        "new-arrivals-container"
     );
+
+// safe helpers
+function safeText(
+    value,
+    fallback = ""
+) {
+    return String(
+        value ?? fallback
+    );
+}
+
+function safePrice(
+    value
+) {
+    const parsed =
+        parseFloat(value);
+
+    return isNaN(parsed)
+        ? 0
+        : parsed;
+}
 
 // render product card
 function createProductCard(
     product
 ) {
     const rating =
-        Number(
-            product.rating || 4
+        Math.min(
+            5,
+            Math.max(
+                0,
+                Number(
+                    product.rating || 4
+                )
+            )
         );
 
     const stars =
@@ -54,22 +81,30 @@ function createProductCard(
                     )
                 }"
                 alt="${
-                    product.name
+                    safeText(
+                        product.name,
+                        "Product"
+                    )
                 }"
+                loading="lazy"
             >
 
             <div class="des">
-
                 <span>
                     ${
-                        product.category
-                        || "Fashion"
+                        safeText(
+                            product.category,
+                            "Fashion"
+                        )
                     }
                 </span>
 
                 <h5>
                     ${
-                        product.name
+                        safeText(
+                            product.name,
+                            "Product"
+                        )
                     }
                 </h5>
 
@@ -80,14 +115,16 @@ function createProductCard(
                 <h4>
                     ${
                         formatPrice(
-                            product.price
+                            safePrice(
+                                product.price
+                            )
                         )
                     }
                 </h4>
 
                 <div class="product-actions">
-
                     <button
+                        type="button"
                         class="view-product-btn"
                         data-id="${
                             product.id
@@ -97,6 +134,7 @@ function createProductCard(
                     </button>
 
                     <button
+                        type="button"
                         class="add-cart-btn"
                         data-id="${
                             product.id
@@ -104,20 +142,8 @@ function createProductCard(
                     >
                         Add Cart
                     </button>
-
                 </div>
             </div>
-
-            <a
-                href="#"
-                class="cart add-cart-btn"
-                data-id="${
-                    product.id
-                }"
-            >
-                <i class="fal fa-shopping-cart cart"></i>
-            </a>
-
         </div>
     `;
 }
@@ -131,6 +157,7 @@ function renderFeaturedProducts(
     ) {
         return;
     }
+
     const featured =
         products.filter(
             (product) =>
@@ -146,7 +173,7 @@ function renderFeaturedProducts(
                 )
                 .join("")
             : `
-                <p>
+                <p class="empty-products">
                     No featured products found
                 </p>
             `;
@@ -175,7 +202,7 @@ function renderNewArrivals(
                 )
                 .join("")
             : `
-                <p>
+                <p class="empty-products">
                     No new arrivals found
                 </p>
             `;

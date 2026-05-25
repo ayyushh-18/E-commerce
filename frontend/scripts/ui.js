@@ -1,96 +1,159 @@
 // mobile navbar
-const bar =
-    document.getElementById(
-        "bar"
-    );
+function initializeMobileNavbar() {
+    const bar =
+        document.getElementById(
+            "bar"
+        );
 
-const nav =
-    document.getElementById(
-        "navbar"
-    );
+    const navLinks =
+        document.getElementById(
+            "navbar-links"
+        );
 
-if (bar && nav) {
+    if (
+        !bar
+        ||
+        !navLinks
+    ) {
+        return;
+    }
+
     bar.addEventListener(
         "click",
         () => {
-            nav.classList.toggle(
+            navLinks.classList.toggle(
                 "active"
             );
-            nav.style.right =
-                nav.style.right === "0px"
-                    ? "-300px"
-                    : "0px";
         }
     );
-}
 
-// sticky header
-const header =
-    document.getElementById(
-        "header"
-    );
+    // close menu on link click
+    navLinks
+        .querySelectorAll(
+            "a"
+        )
+        .forEach(
+            (link) => {
 
-if (header) {
-    let ticking = false;
-    window.addEventListener(
-        "scroll",
-        () => {
-            if (!ticking) {
-                window.requestAnimationFrame(
+                link.addEventListener(
+                    "click",
                     () => {
-                        header.style.boxShadow =
-                            window.scrollY > 80
-                                ? "0 5px 25px rgba(0,0,0,0.15)"
-                                : "none";
-                        ticking = false;
+
+                        navLinks.classList.remove(
+                            "active"
+                        );
                     }
-                );
-                ticking = true;
-            }
-        }
-    );
-}
-
-// button ripple effect
-document
-    .querySelectorAll("button")
-    .forEach((btn) => {
-
-        btn.addEventListener(
-            "click",
-            function (e) {
-
-                const ripple =
-                    document.createElement(
-                        "span"
-                    );
-
-                ripple.style.cssText = `
-                    position:absolute;
-                    width:10px;
-                    height:10px;
-                    background:white;
-                    border-radius:50%;
-                    transform:scale(0);
-                    animation:ripple 0.6s linear;
-                    top:${e.offsetY}px;
-                    left:${e.offsetX}px;
-                `;
-
-                this.style.position =
-                    "relative";
-
-                this.appendChild(
-                    ripple
-                );
-
-                setTimeout(
-                    () => ripple.remove(),
-                    600
                 );
             }
         );
-    });
+}
+
+// sticky header
+function initializeStickyHeader() {
+    const header =
+        document.getElementById(
+            "header"
+        );
+
+    if (
+        !header
+    ) {
+        return;
+    }
+
+    let ticking =
+        false;
+
+    window.addEventListener(
+        "scroll",
+        () => {
+            if (
+                !ticking
+            ) {
+                window.requestAnimationFrame(
+                    () => {
+
+                        header.style.boxShadow =
+                            window.scrollY > 80
+                                ? "0 5px 25px rgba(0,0,0,0.15)"
+                                : "0 5px 15px rgba(0,0,0,0.06)";
+
+                        ticking =
+                            false;
+                    }
+                );
+
+                ticking =
+                    true;
+            }
+        }
+    );
+}
+
+// ripple effect
+function initializeRippleEffect() {
+    document.addEventListener(
+        "click",
+        (event) => {
+            const btn =
+                event.target.closest(
+                    "button"
+                );
+
+            if (
+                !btn
+            ) {
+                return;
+            }
+
+            const ripple =
+                document.createElement(
+                    "span"
+                );
+
+            ripple.style.cssText =
+                `
+                    position:absolute;
+                    width:10px;
+                    height:10px;
+                    background:rgba(255,255,255,0.7);
+                    border-radius:50%;
+                    transform:scale(0);
+                    animation:ripple 0.6s linear;
+                    pointer-events:none;
+                    top:${event.offsetY}px;
+                    left:${event.offsetX}px;
+                `;
+
+            if (
+                getComputedStyle(
+                    btn
+                ).position ===
+                "static"
+            ) {
+
+                btn.style.position =
+                    "relative";
+            }
+
+            btn.style.overflow =
+                "hidden";
+
+            btn.appendChild(
+                ripple
+            );
+
+            setTimeout(
+                () => {
+
+                    ripple.remove();
+
+                },
+                600
+            );
+        }
+    );
+}
 
 // global cart count badge
 function updateCartCount() {
@@ -99,8 +162,10 @@ function updateCartCount() {
 
     const total =
         cart.reduce(
-            (sum, item) => {
-
+            (
+                sum,
+                item
+            ) => {
                 return (
                     sum +
                     (
@@ -118,8 +183,20 @@ function updateCartCount() {
             "cart-count"
         );
 
-    if (!badge) {
+    const cartIcon =
+        document.querySelector(
+            ".fa-shopping-bag"
+        )?.parentElement;
 
+    if (
+        !cartIcon
+    ) {
+        return;
+    }
+
+    if (
+        !badge
+    ) {
         badge =
             document.createElement(
                 "span"
@@ -128,34 +205,70 @@ function updateCartCount() {
         badge.id =
             "cart-count";
 
-        badge.style.cssText = `
-            position:absolute;
-            top:-8px;
-            right:-10px;
-            background:red;
-            color:white;
-            font-size:12px;
-            padding:2px 6px;
-            border-radius:50%;
-        `;
+        badge.style.cssText =
+            `
+                position:absolute;
+                top:-8px;
+                right:-10px;
+                background:red;
+                color:white;
+                font-size:12px;
+                padding:2px 6px;
+                border-radius:50%;
+                min-width:20px;
+                text-align:center;
+            `;
 
-        const cartIcon =
-            document.querySelector(
-                ".fa-shopping-bag"
-            )?.parentElement;
+        if (
+            getComputedStyle(
+                cartIcon
+            ).position ===
+            "static"
+        ) {
 
-        if (cartIcon) {
-
-            cartIcon.appendChild(
-                badge
-            );
+            cartIcon.style.position =
+                "relative";
         }
+
+        cartIcon.appendChild(
+            badge
+        );
     }
 
-    badge.innerText = total;
+    badge.innerText =
+        total;
+
+    badge.style.display =
+        total > 0
+            ? "block"
+            : "none";
 }
 
-updateCartCount();
+// initialize ui
+function initializeUI() {
+    initializeMobileNavbar();
+    initializeStickyHeader();
+    initializeRippleEffect();
+    updateCartCount();
+}
+
+// init after components load
+document.addEventListener(
+    "componentsLoaded",
+    initializeUI
+);
+
+// fallback init
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        setTimeout(
+            initializeUI,
+            300
+        );
+    }
+);
 
 // expose globally
 window.updateCartCount =

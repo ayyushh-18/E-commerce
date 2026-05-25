@@ -4,19 +4,31 @@ const cart =
 
 // EMPTY CART REDIRECT
 if (
-    !Array.isArray(cart)
+    !Array.isArray(
+        cart
+    )
     ||
     cart.length === 0
 ) {
+
     AppUtils.notify(
         "Your cart is empty!",
         "error"
     );
 
-    setTimeout(() => {
-        window.location.href =
-            "cart.html";
-    }, 1000);
+    setTimeout(
+        () => {
+
+            window.location.href =
+                "cart.html";
+
+        },
+        1000
+    );
+
+    throw new Error(
+        "Empty cart"
+    );
 }
 
 // CHECKOUT ELEMENTS
@@ -102,8 +114,90 @@ const elements = {
         )
 };
 
+// SAFE HELPERS
+function safePrice(
+    value
+) {
+
+    const parsed =
+        parseFloat(
+            value
+        );
+
+    return isNaN(parsed)
+        ? 0
+        : parsed;
+}
+
+function safeQty(
+    value
+) {
+
+    const parsed =
+        parseInt(
+            value,
+            10
+        );
+
+    return isNaN(parsed)
+        ? 1
+        : Math.max(
+            1,
+            parsed
+        );
+}
+
+// CALCULATE TOTALS
+function calculateTotals() {
+
+    const subtotal =
+        cart.reduce(
+            (
+                sum,
+                item
+            ) => {
+
+                return (
+                    sum +
+                    (
+                        safePrice(
+                            item.price
+                        ) *
+                        safeQty(
+                            item.qty
+                        )
+                    )
+                );
+            },
+            0
+        );
+
+    const tax =
+        subtotal * 0.18;
+
+    const shipping =
+        subtotal > 0
+        &&
+        subtotal < 999
+            ? 49
+            : 0;
+
+    const total =
+        subtotal +
+        tax +
+        shipping;
+
+    return {
+        subtotal,
+        tax,
+        shipping,
+        total
+    };
+}
+
 // RENDER CHECKOUT
 function renderCheckout() {
+
     if (
         !elements.checkoutItems
     ) {
@@ -116,25 +210,23 @@ function renderCheckout() {
     const fragment =
         document.createDocumentFragment();
 
-    let subtotal = 0;
     cart.forEach(
-        (item) => {
+        (
+            item
+        ) => {
+
             const qty =
-                parseInt(
-                    item.qty,
-                    10
-                ) || 1;
+                safeQty(
+                    item.qty
+                );
 
             const price =
-                parseFloat(
+                safePrice(
                     item.price
-                ) || 0;
+                );
 
             const itemTotal =
                 qty * price;
-
-            subtotal +=
-                itemTotal;
 
             const div =
                 document.createElement(
@@ -148,17 +240,28 @@ function renderCheckout() {
             div.innerHTML =
                 `
                     <div class="checkout-item-info">
+
                         <span>
-                            ${item.name}
+                            ${
+                                item.name || "Product"
+                            }
                         </span>
+
                         <small>
                             Qty: ${qty}
                         </small>
+
                     </div>
+
                     <span>
-                        ${AppUtils.formatPrice(itemTotal)}
+                        ${
+                            AppUtils.formatPrice(
+                                itemTotal
+                            )
+                        }
                     </span>
                 `;
+
             fragment.appendChild(
                 div
             );
@@ -169,56 +272,48 @@ function renderCheckout() {
         fragment
     );
 
-    // totals
-    const tax =
-        subtotal * 0.18;
-
-    const shipping =
-        subtotal > 0 &&
-        subtotal < 999
-            ? 49
-            : 0;
-
-    const total =
-        subtotal +
-        tax +
-        shipping;
+    const totals =
+        calculateTotals();
 
     if (
         elements.subtotal
     ) {
+
         elements.subtotal.innerText =
             AppUtils.formatPrice(
-                subtotal
+                totals.subtotal
             );
     }
 
     if (
         elements.tax
     ) {
+
         elements.tax.innerText =
             AppUtils.formatPrice(
-                tax
+                totals.tax
             );
     }
 
     if (
         elements.shipping
     ) {
+
         elements.shipping.innerText =
-            shipping === 0
+            totals.shipping === 0
                 ? "Free"
                 : AppUtils.formatPrice(
-                    shipping
+                    totals.shipping
                 );
     }
 
     if (
         elements.total
     ) {
+
         elements.total.innerText =
             AppUtils.formatPrice(
-                total
+                totals.total
             );
     }
 }
@@ -227,15 +322,20 @@ renderCheckout();
 
 // PAYMENT METHOD TOGGLE
 elements.paymentMethods.forEach(
-    (method) => {
+    (
+        method
+    ) => {
+
         method.addEventListener(
             "change",
             () => {
+
                 if (
                     !elements.cardDetails
                 ) {
                     return;
                 }
+
                 elements.cardDetails.style.display =
                     method.value ===
                     "Card"
@@ -248,6 +348,7 @@ elements.paymentMethods.forEach(
 
 // VALIDATION
 function validateCheckoutForm() {
+
     if (
         !elements.fullName.value.trim()
         ||
@@ -263,10 +364,12 @@ function validateCheckoutForm() {
         ||
         !elements.address.value.trim()
     ) {
+
         AppUtils.notify(
             "Please fill all required fields.",
             "error"
         );
+
         return false;
     }
 
@@ -279,10 +382,12 @@ function validateCheckoutForm() {
             elements.email.value.trim()
         )
     ) {
+
         AppUtils.notify(
             "Enter a valid email address.",
             "error"
         );
+
         return false;
     }
 
@@ -295,10 +400,12 @@ function validateCheckoutForm() {
             elements.phone.value.trim()
         )
     ) {
+
         AppUtils.notify(
             "Enter a valid 10-digit phone number.",
             "error"
         );
+
         return false;
     }
 
@@ -311,10 +418,12 @@ function validateCheckoutForm() {
             elements.zip.value.trim()
         )
     ) {
+
         AppUtils.notify(
             "Enter a valid ZIP / PIN code.",
             "error"
         );
+
         return false;
     }
 
@@ -323,57 +432,57 @@ function validateCheckoutForm() {
         document.querySelector(
             'input[name="payment"]:checked'
         );
+
     if (
         !selectedPayment
     ) {
+
         AppUtils.notify(
             "Select a payment method.",
             "error"
         );
+
         return false;
     }
+
     return true;
 }
 
 // CREATE ORDER PAYLOAD
 function createOrderPayload() {
+
     const selectedPayment =
         document.querySelector(
             'input[name="payment"]:checked'
         );
 
-    const total =
-        parseFloat(
-            elements.total.innerText.replace(
-                /[^\d.]/g,
-                ""
-            )
-        ) || 0;
     return {
-        customer: {
-            name:
-                elements.fullName.value.trim(),
-            email:
-                elements.email.value.trim(),
-            phone:
-                elements.phone.value.trim()
-        },
+        customer_name:
+            elements.fullName.value.trim(),
 
-        address: {
-            city:
-                elements.city.value.trim(),
-            state:
-                elements.state.value.trim(),
-            zip:
-                elements.zip.value.trim(),
-            fullAddress:
-                elements.address.value.trim()
-        },
-        paymentMethod:
+        customer_email:
+            elements.email.value.trim(),
+
+        customer_phone:
+            elements.phone.value.trim(),
+
+        city:
+            elements.city.value.trim(),
+
+        state:
+            elements.state.value.trim(),
+
+        zip:
+            elements.zip.value.trim(),
+
+        full_address:
+            elements.address.value.trim(),
+
+        payment_method:
             selectedPayment.value,
+
         items:
-            cart,
-        total
+            cart
     };
 }
 
@@ -384,10 +493,15 @@ let isSubmitting =
 if (
     elements.checkoutForm
 ) {
+
     elements.checkoutForm.addEventListener(
         "submit",
-        async (event) => {
+        async (
+            event
+        ) => {
+
             event.preventDefault();
+
             if (
                 isSubmitting
             ) {
@@ -407,8 +521,10 @@ if (
             if (
                 elements.placeOrderBtn
             ) {
+
                 elements.placeOrderBtn.disabled =
                     true;
+
                 elements.placeOrderBtn.innerText =
                     "Processing...";
             }
@@ -417,6 +533,7 @@ if (
                 createOrderPayload();
 
             try {
+
                 const data =
                     await AppUtils.apiRequest(
                         "/orders",
@@ -428,9 +545,11 @@ if (
                                 )
                         }
                     );
+
                 if (
                     data.success
                 ) {
+
                     AppUtils.notify(
                         "Order placed successfully! 🎉",
                         "success"
@@ -442,29 +561,61 @@ if (
                     );
 
                     // store order
+                    AppUtils.setJSON(
+                        "lastOrder",
+                        {
+                            orderId:
+                                data.orderId,
+
+                            total:
+                                data.total,
+
+                            items:
+                                cart
+                        }
+                    );
+
+                    // update ui
                     if (
-                        data.order
+                        typeof updateCartCount ===
+                        "function"
                     ) {
-                        AppUtils.setJSON(
-                            "lastOrder",
-                            data.order
-                        );
+
+                        updateCartCount();
+                    }
+
+                    if (
+                        typeof renderCartDrawer ===
+                        "function"
+                    ) {
+
+                        renderCartDrawer();
                     }
 
                     // redirect
-                    setTimeout(() => {
-                        window.location.href =
-                            "success.html";
-                    }, 1200);
+                    setTimeout(
+                        () => {
+
+                            window.location.href =
+                                "success.html";
+
+                        },
+                        1200
+                    );
 
                 } else {
+
                     AppUtils.notify(
                         data.message ||
                         "Failed to place order.",
                         "error"
                     );
                 }
-            } catch (error) {
+
+            } catch (
+                error
+            ) {
+
                 console.error(
                     "ORDER ERROR:",
                     error
@@ -476,12 +627,14 @@ if (
                 );
 
             } finally {
+
                 isSubmitting =
                     false;
 
                 if (
                     elements.placeOrderBtn
                 ) {
+
                     elements.placeOrderBtn.disabled =
                         false;
 

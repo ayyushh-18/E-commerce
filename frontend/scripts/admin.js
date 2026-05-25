@@ -25,10 +25,7 @@ if (
             "signin.html";
     }, 1000);
 
-    throw new Error(
-        "Unauthorized admin access"
-    );
-}
+} else {
 
 // elements
 const elements = {
@@ -36,54 +33,67 @@ const elements = {
         document.getElementById(
             "product-form"
         ),
+
     productTableBody:
         document.getElementById(
             "product-table-body"
         ),
+
     ordersTableBody:
         document.getElementById(
             "orders-table-body"
         ),
+
     totalOrders:
         document.getElementById(
             "total-orders"
         ),
+
     totalProducts:
         document.getElementById(
             "total-products"
         ),
+
     totalUsers:
         document.getElementById(
             "total-users"
         ),
+
     totalRevenue:
         document.getElementById(
             "total-revenue"
         ),
+
     productName:
         document.getElementById(
             "product-name"
         ),
+
     productCategory:
         document.getElementById(
             "product-category"
         ),
+
     productPrice:
         document.getElementById(
             "product-price"
         ),
+
     productDescription:
         document.getElementById(
             "product-description"
         ),
+
     productImage:
         document.getElementById(
             "product-image"
         ),
+
     productStock:
         document.getElementById(
             "product-stock"
         ),
+
     featuredProduct:
         document.getElementById(
             "featured-product"
@@ -113,6 +123,7 @@ function renderLoadingState() {
 // load initial data
 async function loadInitialData() {
     renderLoadingState();
+
     try {
         const productsRes =
             await AppUtils.apiRequest(
@@ -145,14 +156,17 @@ async function loadInitialData() {
                     ? ordersRes.orders
                     : [];
         }
+
         renderProducts();
         renderOrders();
         renderStats();
+
     } catch (error) {
         console.error(
             "ADMIN LOAD ERROR:",
             error
         );
+
         if (
             elements.productTableBody
         ) {
@@ -207,6 +221,7 @@ function renderStats() {
             },
             0
         );
+
     if (
         elements.totalRevenue
     ) {
@@ -230,6 +245,7 @@ function validateProduct(
             "Product name and category are required.",
             "error"
         );
+
         return false;
     }
 
@@ -242,8 +258,10 @@ function validateProduct(
             "Invalid price or stock.",
             "error"
         );
+
         return false;
     }
+
     return true;
 }
 
@@ -252,21 +270,27 @@ function getProductPayload() {
     return {
         name:
             elements.productName.value.trim(),
+
         category:
             elements.productCategory.value.trim(),
+
         price:
             parseFloat(
                 elements.productPrice.value
             ) || 0,
+
         description:
             elements.productDescription.value.trim(),
+
         image:
             elements.productImage.value.trim(),
+
         stock:
             parseInt(
                 elements.productStock.value,
                 10
             ) || 0,
+
         featured:
             elements.featuredProduct.checked
     };
@@ -280,8 +304,10 @@ if (
         "submit",
         async (event) => {
             event.preventDefault();
+
             const productData =
                 getProductPayload();
+
             if (
                 !validateProduct(
                     productData
@@ -289,6 +315,7 @@ if (
             ) {
                 return;
             }
+
             try {
                 const response =
                     await AppUtils.apiRequest(
@@ -301,6 +328,7 @@ if (
                                 )
                         }
                     );
+
                 if (
                     response.success
                 ) {
@@ -308,8 +336,11 @@ if (
                         "Product added successfully!",
                         "success"
                     );
+
                     elements.productForm.reset();
+
                     await loadInitialData();
+
                 } else {
                     AppUtils.notify(
                         response.message ||
@@ -317,11 +348,13 @@ if (
                         "error"
                     );
                 }
+
             } catch (error) {
                 console.error(
                     "ADD PRODUCT ERROR:",
                     error
                 );
+
                 AppUtils.notify(
                     "Failed to add product.",
                     "error"
@@ -338,8 +371,10 @@ function renderProducts() {
     ) {
         return;
     }
+
     elements.productTableBody.innerHTML =
         "";
+
     if (
         !products.length
     ) {
@@ -351,6 +386,7 @@ function renderProducts() {
                     </td>
                 </tr>
             `;
+
         return;
     }
 
@@ -400,6 +436,7 @@ function renderProducts() {
                         >
                             Edit
                         </button>
+
                         <button
                             type="button"
                             class="action-btn delete-btn"
@@ -428,14 +465,15 @@ function renderProducts() {
                     deleteProduct(
                         product.id
                     );
-
                 }
             );
+
             fragment.appendChild(
                 row
             );
         }
     );
+
     elements.productTableBody.appendChild(
         fragment
     );
@@ -455,6 +493,7 @@ async function deleteProduct(
     ) {
         return;
     }
+
     try {
         const response =
             await AppUtils.apiRequest(
@@ -475,6 +514,7 @@ async function deleteProduct(
 
             renderProducts();
             renderStats();
+
             AppUtils.notify(
                 "Product deleted successfully!",
                 "success"
@@ -487,11 +527,13 @@ async function deleteProduct(
                 "error"
             );
         }
+
     } catch (error) {
         console.error(
             "DELETE PRODUCT ERROR:",
             error
         );
+
         AppUtils.notify(
             "Failed to delete product.",
             "error"
@@ -514,6 +556,7 @@ async function editProduct(
     ) {
         return;
     }
+
     const newName =
         prompt(
             "Edit Product Name",
@@ -531,6 +574,7 @@ async function editProduct(
             "Edit Product Stock",
             product.stock
         );
+
     if (
         !newName?.trim()
         ||
@@ -542,27 +586,34 @@ async function editProduct(
             "Invalid product details.",
             "error"
         );
+
         return;
     }
 
     const updatedData = {
         name:
             newName.trim(),
+
         description:
             product.description || "",
+
         price:
             parseFloat(
                 newPrice
             ) || 0,
+
         image:
             product.image || "",
+
         category:
             product.category || "",
+
         stock:
             parseInt(
                 newStock,
                 10
             ) || 0,
+
         featured:
             product.featured || false
     };
@@ -579,6 +630,7 @@ async function editProduct(
                         )
                 }
             );
+
         if (
             response.success
         ) {
@@ -586,12 +638,15 @@ async function editProduct(
                 product,
                 updatedData
             );
+
             renderProducts();
             renderStats();
+
             AppUtils.notify(
                 "Product updated successfully!",
                 "success"
             );
+
         } else {
             AppUtils.notify(
                 response.message ||
@@ -599,11 +654,13 @@ async function editProduct(
                 "error"
             );
         }
+
     } catch (error) {
         console.error(
             "EDIT PRODUCT ERROR:",
             error
         );
+
         AppUtils.notify(
             "Failed to update product.",
             "error"
@@ -633,6 +690,7 @@ function renderOrders() {
                     </td>
                 </tr>
             `;
+
         return;
     }
 
@@ -664,11 +722,13 @@ function renderOrders() {
                         ${AppUtils.formatPrice(order.total || 0)}
                     </td>
                 `;
+
             fragment.appendChild(
                 row
             );
         }
     );
+
     elements.ordersTableBody.appendChild(
         fragment
     );
@@ -681,3 +741,5 @@ document.addEventListener(
         loadInitialData();
     }
 );
+
+}

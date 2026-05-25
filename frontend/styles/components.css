@@ -1,7 +1,4 @@
-/* =============================
-   HEADER
-============================= */
-
+/* HEADER */
 #header {
     display: flex;
     align-items: center;
@@ -15,19 +12,13 @@
     z-index: 999;
 }
 
-/* =============================
-   LOGO
-============================= */
-
+/* LOGO */
 .logo {
     width: 140px;
     object-fit: contain;
 }
 
-/* =============================
-   NAVIGATION
-============================= */
-
+/* NAVIGATION */
 #navbar-links {
     display: flex;
     align-items: center;
@@ -51,13 +42,20 @@
     cursor: pointer;
 }
 
+/* touch target */
+#navbar-links li button,
+#navbar-links li a {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+}
+
 #navbar-links li a:hover,
 #navbar-links li a.active {
     color: var(--primary-color);
 }
 
 /* underline */
-
 #navbar-links li a.active::after,
 #navbar-links li a:hover::after {
     content: "";
@@ -69,10 +67,7 @@
     left: 0;
 }
 
-/* =============================
-   CART
-============================= */
-
+/* CART */
 .cart-link a {
     display: flex;
     align-items: center;
@@ -87,10 +82,7 @@
     padding: 2px 6px;
 }
 
-/* =============================
-   PROFILE DROPDOWN
-============================= */
-
+/* PROFILE DROPDOWN */
 .profile-wrapper {
     position: relative;
 }
@@ -110,7 +102,13 @@
     z-index: 1000;
 }
 
+/* desktop hover */
 .profile-wrapper:hover #profile-dropdown {
+    display: flex;
+}
+
+/* js active dropdown */
+#profile-dropdown.active {
     display: flex;
 }
 
@@ -129,6 +127,7 @@
     transition: var(--transition-fast);
     font-size: 14px;
     width: 100%;
+    min-height: 44px;
 }
 
 #profile-dropdown a:hover,
@@ -137,15 +136,14 @@
     color: var(--primary-color);
 }
 
-/* =============================
-   MOBILE MENU
-============================= */
-
+/* MOBILE MENU */
 #mobile-menu-btn {
     display: none;
     border: none;
     background: none;
     cursor: pointer;
+    min-height: 44px;
+    min-width: 44px;
 }
 
 #mobile-menu-btn i {
@@ -153,10 +151,7 @@
     color: var(--text-dark);
 }
 
-/* =============================
-   FOOTER
-============================= */
-
+/* FOOTER */
 footer {
     display: flex;
     flex-wrap: wrap;
@@ -235,12 +230,8 @@ footer .copyright {
     margin-top: 20px;
 }
 
-/* =============================
-   RESPONSIVE
-============================= */
-
+/* RESPONSIVE */
 @media(max-width:799px) {
-
     #header {
         padding: 20px 30px;
     }
@@ -276,13 +267,16 @@ footer .copyright {
         padding: 10px 0;
     }
 
-    .profile-wrapper:hover #profile-dropdown {
+    #profile-dropdown.active {
         display: flex;
+    }
+
+    .profile-wrapper:hover #profile-dropdown {
+        display: none;
     }
 }
 
 @media(max-width:477px) {
-
     #header {
         padding: 12px 20px;
     }

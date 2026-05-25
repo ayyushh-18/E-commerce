@@ -1,12 +1,12 @@
 // product controls
 const searchInput =
     document.getElementById(
-        "search-input"
+        "product-search"
     );
 
 const sortSelect =
     document.getElementById(
-        "sort-products"
+        "product-sort"
     );
 
 const categoryFilter =
@@ -17,6 +17,26 @@ const categoryFilter =
 // filtered products
 let filteredProducts =
     [];
+
+// safe helpers
+function safeText(
+    value
+) {
+    return String(
+        value || ""
+    ).toLowerCase();
+}
+
+function safePrice(
+    value
+) {
+    const parsed =
+        parseFloat(value);
+
+    return isNaN(parsed)
+        ? 0
+        : parsed;
+}
 
 // apply filters
 function applyShopFilters() {
@@ -31,22 +51,24 @@ function applyShopFilters() {
             ?.trim()
             .toLowerCase();
 
-    if (searchValue) {
+    if (
+        searchValue
+    ) {
         products =
             products.filter(
                 (product) => {
                     return (
-                        product.name
-                            ?.toLowerCase()
-                            .includes(
-                                searchValue
-                            )
+                        safeText(
+                            product.name
+                        ).includes(
+                            searchValue
+                        )
                         ||
-                        product.category
-                            ?.toLowerCase()
-                            .includes(
-                                searchValue
-                            )
+                        safeText(
+                            product.category
+                        ).includes(
+                            searchValue
+                        )
                     );
                 }
             );
@@ -57,14 +79,19 @@ function applyShopFilters() {
         categoryFilter?.value;
 
     if (
-        category &&
+        category
+        &&
         category !== "all"
     ) {
         products =
             products.filter(
                 (product) =>
-                    product.category ===
-                    category
+                    safeText(
+                        product.category
+                    ) ===
+                    safeText(
+                        category
+                    )
             );
     }
 
@@ -72,19 +99,31 @@ function applyShopFilters() {
     const sortValue =
         sortSelect?.value;
 
-    switch (sortValue) {
-        case "price-low-high":
+    switch (
+        sortValue
+    ) {
+        case "low-high":
             products.sort(
                 (a, b) =>
-                    a.price - b.price
+                    safePrice(
+                        a.price
+                    ) -
+                    safePrice(
+                        b.price
+                    )
             );
 
             break;
 
-        case "price-high-low":
+        case "high-low":
             products.sort(
                 (a, b) =>
-                    b.price - a.price
+                    safePrice(
+                        b.price
+                    ) -
+                    safePrice(
+                        a.price
+                    )
             );
 
             break;
@@ -92,8 +131,12 @@ function applyShopFilters() {
         case "name-a-z":
             products.sort(
                 (a, b) =>
-                    a.name.localeCompare(
-                        b.name
+                    safeText(
+                        a.name
+                    ).localeCompare(
+                        safeText(
+                            b.name
+                        )
                     )
             );
 
@@ -102,15 +145,21 @@ function applyShopFilters() {
         case "name-z-a":
             products.sort(
                 (a, b) =>
-                    b.name.localeCompare(
-                        a.name
+                    safeText(
+                        b.name
+                    ).localeCompare(
+                        safeText(
+                            a.name
+                        )
                     )
             );
 
             break;
+
         default:
             break;
     }
+
     filteredProducts =
         products;
 
@@ -119,6 +168,7 @@ function applyShopFilters() {
 
 // update UI
 function updateFilteredUI() {
+
     if (
         typeof renderFeaturedProducts ===
         "function"
@@ -139,21 +189,27 @@ function updateFilteredUI() {
 }
 
 // listeners
-if (searchInput) {
+if (
+    searchInput
+) {
     searchInput.addEventListener(
         "input",
         applyShopFilters
     );
 }
 
-if (sortSelect) {
+if (
+    sortSelect
+) {
     sortSelect.addEventListener(
         "change",
         applyShopFilters
     );
 }
 
-if (categoryFilter) {
+if (
+    categoryFilter
+) {
     categoryFilter.addEventListener(
         "change",
         applyShopFilters

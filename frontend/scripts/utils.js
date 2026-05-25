@@ -19,6 +19,7 @@ const notify = (
             ? "error"
             : "log"
     ](message);
+
     if (
         type === "error"
     ) {
@@ -46,6 +47,7 @@ const getJSON = (
             `getJSON error for key "${key}":`,
             error
         );
+
         return fallback;
     }
 };
@@ -66,6 +68,7 @@ const setJSON = (
             `setJSON error for key "${key}":`,
             error
         );
+
         return false;
     }
 };
@@ -105,9 +108,11 @@ const clearAuthData = () => {
     removeStorage(
         "token"
     );
+
     removeStorage(
         "refreshToken"
     );
+
     removeStorage(
         "user"
     );
@@ -129,12 +134,15 @@ const requireAuth = () => {
             "Please sign in to continue",
             "error"
         );
+
         setTimeout(() => {
             window.location.href =
                 "signin.html";
         }, 800);
+
         return null;
     }
+
     return user;
 };
 
@@ -144,6 +152,7 @@ const refreshAccessToken =
         try {
             const refreshToken =
                 getRefreshToken();
+
             if (
                 !refreshToken
             ) {
@@ -170,25 +179,31 @@ const refreshAccessToken =
             const data =
                 await response.json();
 
+            // validate refresh response
             if (
                 !response.ok
                 ||
-                !data.token
+                !data.accessToken
             ) {
                 clearAuthData();
                 return null;
             }
+
             localStorage.setItem(
                 "token",
-                data.token
+                data.accessToken
             );
-            return data.token;
+
+            return data.accessToken;
+
         } catch (error) {
             console.error(
                 "TOKEN REFRESH ERROR:",
                 error
             );
+
             clearAuthData();
+
             return null;
         }
     };
@@ -214,6 +229,7 @@ const apiRequest =
                             `Bearer ${token}`
                     }
                     : {}),
+
                 ...(options.headers || {})
             };
 
@@ -232,7 +248,6 @@ const apiRequest =
                 &&
                 retry
             ) {
-
                 const newToken =
                     await refreshAccessToken();
 
@@ -247,6 +262,7 @@ const apiRequest =
                 }
 
                 clearAuthData();
+
                 notify(
                     "Session expired. Please login again.",
                     "error"
@@ -256,6 +272,7 @@ const apiRequest =
                     window.location.href =
                         "signin.html";
                 }, 1000);
+
                 return {
                     success: false,
                     message:
@@ -265,6 +282,7 @@ const apiRequest =
 
             // parse json safely
             let data = {};
+
             try {
                 data =
                     await response.json();
@@ -284,12 +302,15 @@ const apiRequest =
                     `Request failed (${response.status})`
                 );
             }
+
             return data;
+
         } catch (error) {
             console.error(
                 `API REQUEST ERROR (${url}):`,
                 error
             );
+
             return {
                 success: false,
                 message:
@@ -373,6 +394,7 @@ const getCart = () =>
         "cart",
         []
     );
+
 const saveCart = (
     cart
 ) => {
