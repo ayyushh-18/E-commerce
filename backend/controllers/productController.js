@@ -11,199 +11,167 @@ const {
 } = require("../utils/helpers");
 
 // get all products
-const getProducts = (req, res) => {
+const getProducts = async (req, res) => {
 
-    const {
-        page,
-        limit,
-        offset
-    } = getPagination(
-        req.query.page,
-        req.query.limit,
-        50
-    );
+    try {
 
-    const search =
-        req.query.search
-            ? `%${sanitizeString(
-                req.query.search
-            )}%`
-            : null;
-
-    let query = `
-        SELECT
-            id,
-            name,
-            description,
-            price,
-            image,
-            category,
-            stock,
-            featured
-        FROM products
-    `;
-
-    const params = [];
-
-    // query conditions
-    const conditions = [];
-
-    // category filter
-    if (
-        req.query.category
-    ) {
-
-        conditions.push(
-            "category = ?"
+        const {
+            page,
+            limit,
+            offset
+        } = getPagination(
+            req.query.page,
+            req.query.limit,
+            50
         );
 
-        params.push(
-            sanitizeString(
-                req.query.category
-            )
-        );
-    }
+        const search =
+            req.query.search
+                ? `%${sanitizeString(
+                    req.query.search
+                )}%`
+                : null;
 
-    // featured filter
-    if (
-        req.query.featured === "true"
-    ) {
-
-        conditions.push(
-            "featured = 1"
-        );
-    }
-
-    // search filter
-    if (
-        search
-    ) {
-
-        conditions.push(
-            "name LIKE ?"
-        );
-
-        params.push(
-            search
-        );
-    }
-
-    // build where clause
-    if (
-        conditions.length
-    ) {
-
-        query += `
-            WHERE ${conditions.join(" AND ")}
+        let baseQuery = `
+            FROM products
         `;
-    }
 
-    const countQuery = `
-        SELECT COUNT(*) AS total
-        FROM products
-        ${conditions.length
-            ? `WHERE ${conditions.join(" AND ")}`
-            : ""
+        const conditions = [];
+        const params = [];
+
+        // category filter
+        if (req.query.category) {
+
+            conditions.push(
+                "category = ?"
+            );
+
+            params.push(
+                sanitizeString(
+                    req.query.category
+                )
+            );
         }
-    `;
 
-    db.query(
-        countQuery,
-        params,
-        (
-            countError,
-            countResults
-        ) => {
+        // featured filter
+        if (
+            req.query.featured === "true"
+        ) {
 
-            if (
-                countError
-            ) {
+            conditions.push(
+                "featured = 1"
+            );
+        }
 
-                console.error(
-                    countError
-                );
+        // search filter
+        if (search) {
 
-                return res.status(500)
-                    .json({
-                        success: false,
-                        message:
-                            "Server error"
-                    });
-            }
+            conditions.push(
+                "name LIKE ?"
+            );
 
-            const total =
-                Number(
-                    countResults?.[0]?.total || 0
-                );
+            params.push(search);
+        }
 
-            query += `
-                ORDER BY id DESC
-                LIMIT ?
-                OFFSET ?
+        // build where clause
+        if (conditions.length) {
+
+            baseQuery += `
+                WHERE ${conditions.join(" AND ")}
             `;
+        }
 
-            const finalParams = [
+        // count query
+        const countQuery = `
+            SELECT COUNT(*) AS total
+            ${baseQuery}
+        `;
+
+        // product query
+        const productQuery = `
+            SELECT
+                id,
+                name,
+                description,
+                price,
+                image,
+                category,
+                stock,
+                featured
+            ${baseQuery}
+            ORDER BY id DESC
+            LIMIT ?
+            OFFSET ?
+        `;
+
+        // promise pool
+        const promiseDb =
+            db.promise();
+
+        // get total count
+        const [
+            countResults
+        ] = await promiseDb.query(
+            countQuery,
+            params
+        );
+
+        const total =
+            Number(
+                countResults?.[0]?.total || 0
+            );
+
+        // fetch products
+        const [
+            results
+        ] = await promiseDb.query(
+            productQuery,
+            [
                 ...params,
                 limit,
                 offset
-            ];
+            ]
+        );
 
-            db.query(
-                query,
-                finalParams,
-                (
-                    error,
-                    results
-                ) => {
+        return res.status(200)
+            .json({
 
-                    if (
-                        error
-                    ) {
+                success: true,
 
-                        console.error(
-                            error
-                        );
+                page,
 
-                        return res.status(500)
-                            .json({
-                                success: false,
-                                message:
-                                    "Server error"
-                            });
-                    }
+                limit,
 
-                    res.status(200)
-                        .json({
-                            success: true,
+                total,
 
-                            page,
+                ...buildPaginationMeta(
+                    total,
+                    page,
+                    limit
+                ),
 
-                            limit,
+                count:
+                    safeArray(results)
+                        .length,
 
-                            total,
+                products:
+                    safeArray(results)
+            });
 
-                            ...buildPaginationMeta(
-                                total,
-                                page,
-                                limit
-                            ),
+    } catch (error) {
 
-                            count:
-                                Array.isArray(
-                                    results
-                                )
-                                    ? results.length
-                                    : 0,
+        console.error(
+            "GET PRODUCTS ERROR:",
+            error
+        );
 
-                            products:
-                                safeArray(
-                                    results
-                                )
-                        });
-                }
-            );
-        }
-    );
+        return res.status(500)
+            .json({
+                success: false,
+                message:
+                    "Failed to fetch products"
+            });
+    }
 };
 
 // get single product
