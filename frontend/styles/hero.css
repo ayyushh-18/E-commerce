@@ -15,9 +15,18 @@ hero section
     transition: background-position 0.9s ease-out, transform 0.9s ease-out;
     will-change: transform, opacity, background-position;
 }
-
-#hero h4{
-    padding-bottom: 15px;
+#herotexts{
+    height:90vh;
+    width:40%;
+    display:flexbox;
+    flex-direction: column;
+    align-content:center;
+    flex-wrap:wrap;
+}
+#hero h2{
+    font-size:2.5rem;
+    margin-bottom: 10px;
+    line-height: 1;
 }
 
 #hero h1{
@@ -108,7 +117,7 @@ banner
 #banner{
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-end;
     align-items: center;
     text-align: center;
     background-image: url("../assets/images/banner.png");
@@ -150,7 +159,7 @@ small banners
 #sm-banner .banner-box{
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-end;
     align-items: flex-start;
     background-image: url("../assets/images/b17.jpg");
     min-width: 48%;
@@ -199,18 +208,28 @@ banner3
 }
 
 #banner3 .banner-box{
+    text-align: end;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-end;
     align-items: flex-start;
     background-image: url("../assets/images/b7.jpg");
     min-width: 30%;
     height: 30vh;
     background-size: cover;
     background-position: center;
-    padding: 20px;
+    padding: 20px 20px 0px 20px; 
     margin-bottom: 20px;
 }
+#banner3 .banner-box h2,
+#banner3 .banner-box h4 {
+    margin: 0;
+    line-height: 1.1;
+}
+#banner3 .banner-box h4 {
+    margin-top: 2px;
+}
+
 
 #banner3 .banner-box2{
     background-image: url("../assets/images/b4.jpg");
@@ -224,6 +243,7 @@ banner3
     color: var(--white);
     font-weight: 900;
     font-size: 22px;
+    
 }
 
 #banner3 h3{

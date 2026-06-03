@@ -1,9 +1,9 @@
 // hero rotating text
 const heroTexts = [
-    "Super Value Deals",
-    "Latest Fashion Trends",
-    "Save More With Coupons",
-    "New Arrivals Available"
+    "Limited Deals",
+    "Value Offers",
+    "Save upto 70%",
+    "New Arrivals"
 ];
 
 let heroIndex = 0;
